@@ -18,26 +18,6 @@ RailsAdmin.config do |config|
     edit
     delete
 
-    # “Show in app” still opens the raw image
-    show_in_app do
-      only ['Slide']
-      link_icon 'fa fa-image'
-      controller do
-        proc do
-          slide = @abstract_model.model.find(params[:id])
-          if slide.image.attached?
-            redirect_to Rails.application.routes.url_helpers.rails_blob_url(
-              slide.image,
-              host: request.base_url,
-              disposition: "inline"
-            ), allow_other_host: true
-          else
-            flash[:error] = "No image attached"
-            redirect_to back_or_index
-          end
-        end
-      end
-    end
   end
 
   ### KioskGroup ###
