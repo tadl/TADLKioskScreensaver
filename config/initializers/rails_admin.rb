@@ -1,7 +1,7 @@
 # config/initializers/rails_admin.rb
 
 RailsAdmin.config do |config|
-  # Use importmap for your app assets, then sprockets for RailsAdmin’s
+  # Asset loading
   config.asset_source    = :importmap
   config.main_app_name   = [ "Kiosk Screensaver", "Admin" ]
   config.included_models = ['KioskGroup', 'Kiosk', 'Slide']
@@ -9,8 +9,8 @@ RailsAdmin.config do |config|
 
   ### Actions ###
   config.actions do
-    dashboard                     # mandatory
-    index                         # mandatory
+    dashboard
+    index
     new
     export
     bulk_delete
@@ -18,7 +18,6 @@ RailsAdmin.config do |config|
     edit
     delete
 
-    # Show in app → open the raw image for Slides
     show_in_app do
       only ['Slide']
       link_icon 'fa fa-image'
@@ -43,7 +42,7 @@ RailsAdmin.config do |config|
 
   ### Models ###
 
-  # 1) KioskGroup admin UI
+  # KioskGroup
   config.model 'KioskGroup' do
     navigation_label 'Content'
     weight          0
@@ -62,7 +61,7 @@ RailsAdmin.config do |config|
     end
   end
 
-  # 2) Kiosk admin UI
+  # Kiosk
   config.model 'Kiosk' do
     navigation_label 'Content'
     weight          1
@@ -84,16 +83,39 @@ RailsAdmin.config do |config|
     end
   end
 
-  # 3) Slide admin UI
+  # Slide (with working preview column)
   config.model 'Slide' do
     navigation_label 'Content'
     weight          2
     label_plural    'Slides'
 
-    # Use your custom label method
     object_label_method :rails_admin_label
 
     list do
+      field :image do
+        label 'Preview'
+        sortable false
+
+        # We use formatted_value to return HTML-safe <img> tag
+        formatted_value do
+          if bindings[:object].image.attached?
+            # Generate a 100×100 variant and get a public service URL
+            variant = bindings[:object]
+                        .image
+                        .variant(resize_to_limit: [100, 100])
+                        .processed
+            url = Rails.application.routes.url_helpers.rails_representation_url(
+              variant,
+              host: bindings[:view].request.base_url
+            )
+            # Render an <img> tag
+            bindings[:view].tag.img(src: url, width: 100, height: 100)
+          else
+            "-"
+          end
+        end
+      end
+
       field :title
       field :display_seconds
       field :start_date
