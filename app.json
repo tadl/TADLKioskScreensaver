@@ -1,0 +1,20 @@
+{
+    "name": "kiosk-screensaver",
+    "env": {
+        "RAILS_ENV": { "value": "production" },
+        "SECRET_KEY_BASE": { "generator": "secret" }
+    },
+    "scripts": {
+        "dokku": {
+            "predeploy": "bundle exec rake db:migrate",
+            "postdeploy": "bundle exec rake assets:precompile"
+        }
+    },
+    "addons": [
+        "dokku-postgres"
+    ],
+    "buildpacks": [
+        { "url": "heroku/ruby" }
+    ]
+}
+

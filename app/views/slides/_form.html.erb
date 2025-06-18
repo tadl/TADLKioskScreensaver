@@ -1,0 +1,80 @@
+<%= form_with(model: slide, class: "contents") do |form| %>
+  <% if slide.errors.any? %>
+    <div id="error_explanation" class="bg-red-50 text-red-500 px-3 py-2 font-medium rounded-md mt-3">
+      <h2><%= pluralize(slide.errors.count, "error") %> prohibited this slide from being saved:</h2>
+      <ul class="list-disc ml-6">
+        <% slide.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="my-5">
+    <%= form.label :title %>
+    <%= form.text_field :title,
+         class: ["block shadow-sm rounded-md border px-3 py-2 mt-2 w-full",
+                 { "border-gray-400 focus:outline-blue-600": slide.errors[:title].none?,
+                   "border-red-400   focus:outline-red-600":  slide.errors[:title].any? }
+                ] %>
+  </div>
+
+  <div class="my-5">
+    <%= form.label :link %>
+    <%= form.text_field :link,
+         class: ["block shadow-sm rounded-md border px-3 py-2 mt-2 w-full",
+                 { "border-gray-400 focus:outline-blue-600": slide.errors[:link].none?,
+                   "border-red-400   focus:outline-red-600":  slide.errors[:link].any? }
+                ] %>
+  </div>
+
+  <!-- IMAGE UPLOAD FIELD -->
+  <div class="my-5">
+    <%= form.label :image %>
+    <%= form.file_field :image,
+         class: "block shadow-sm rounded-md border px-3 py-2 mt-2 w-full" %>
+  </div>
+
+  <div class="my-5">
+    <%= form.label :display_seconds, "Duration (sec)" %>
+    <%= form.number_field :display_seconds,
+         class: ["block shadow-sm rounded-md border px-3 py-2 mt-2 w-full",
+                 { "border-gray-400 focus:outline-blue-600": slide.errors[:display_seconds].none?,
+                   "border-red-400   focus:outline-red-600":  slide.errors[:display_seconds].any? }
+                ] %>
+  </div>
+
+  <div class="my-5">
+    <%= form.label :start_date %>
+    <%= form.date_field :start_date,
+         class: ["block shadow-sm rounded-md border px-3 py-2 mt-2 w-full",
+                 { "border-gray-400 focus:outline-blue-600": slide.errors[:start_date].none?,
+                   "border-red-400   focus:outline-red-600":  slide.errors[:start_date].any? }
+                ] %>
+  </div>
+
+  <div class="my-5">
+    <%= form.label :end_date %>
+    <%= form.date_field :end_date,
+         class: ["block shadow-sm rounded-md border px-3 py-2 mt-2 w-full",
+                 { "border-gray-400 focus:outline-blue-600": slide.errors[:end_date].none?,
+                   "border-red-400   focus:outline-red-600":  slide.errors[:end_date].any? }
+                ] %>
+  </div>
+
+  <!-- KIOSK ASSIGNMENT CHECKBOXES -->
+  <div class="my-5">
+    <%= form.label :kiosk_ids, "Assign to kiosks" %><br>
+    <%= form.collection_check_boxes :kiosk_ids, Kiosk.all, :id, :name do |b| %>
+      <label class="inline-flex items-center mt-1">
+        <%= b.check_box class: "form-checkbox" %>
+        <span class="ml-2"><%= b.text %></span>
+      </label><br>
+    <% end %>
+  </div>
+
+  <div class="inline">
+    <%= form.submit class: "w-full sm:w-auto rounded-md px-3.5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white inline-block font-medium cursor-pointer" %>
+  </div>
+<% end %>
+

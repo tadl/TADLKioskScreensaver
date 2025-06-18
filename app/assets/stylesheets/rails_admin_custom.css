@@ -1,0 +1,50 @@
+/* rails_admin_custom.css */
+/* make the navbar your library’s blue */
+.navbar-inverse, .navbar-default {
+  background-color: #1c3d72 !important;
+  border-color: #142a52 !important;
+}
+
+/* style the sidebar links */
+.navbar-nav > li > a {
+  color: #fff !important;
+}
+.sidebar .nav > li > a:hover {
+  background-color: rgba(255,255,255,0.1) !important;
+}
+
+/* bump the content area in a bit */
+#content {
+  padding: 20px !important;
+}
+
+/* === RailsAdmin Chosen (multi-select) overrides === */
+
+/* Make the “chosen” dropdown items dark on white */
+.chosen-container .chosen-results li {
+  color: #1a1a1a !important;
+  background: #fff !important;
+}
+
+/* Highlighted item (when you hover or arrow-key) */
+.chosen-container .chosen-results li.highlighted {
+  background-color: #1c3d72 !important;  /* your brand blue */
+  color: #fff !important;
+}
+
+/* The “chips” for selected items in the box */
+.chosen-container-multi .chosen-choices .search-choice {
+  background-color: #f0f0f0 !important;
+  color: #1a1a1a !important;
+}
+
+/* The little “×” remove icon on each chip */
+.chosen-container-multi .chosen-choices .search-choice .search-choice-close {
+  color: #777 !important;
+}
+
+/* The gray placeholder text in the select box */
+.chosen-container .chosen-search input[type="text"] {
+  color: #666 !important;
+}
+

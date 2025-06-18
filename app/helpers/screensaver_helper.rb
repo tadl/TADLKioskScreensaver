@@ -1,0 +1,2 @@
+module ScreensaverHelper
+end
