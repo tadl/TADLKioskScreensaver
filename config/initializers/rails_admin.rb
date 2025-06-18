@@ -18,7 +18,7 @@ RailsAdmin.config do |config|
     edit
     delete
 
-    # “Show in app” opens the raw image
+    # “Show in app” still opens the raw image
     show_in_app do
       only ['Slide']
       link_icon 'fa fa-image'
@@ -45,8 +45,18 @@ RailsAdmin.config do |config|
     navigation_label 'Content'
     weight          0
     label_plural    'Kiosk Groups'
-    list   { field :name; field :slug; field :kiosks }
-    edit   { field :name; field :slug; field :kiosks }
+
+    list do
+      field :name
+      field :slug
+      field :kiosks
+    end
+
+    edit do
+      field :name
+      field :slug
+      field :kiosks
+    end
   end
 
   ### Kiosk ###
@@ -54,10 +64,24 @@ RailsAdmin.config do |config|
     navigation_label 'Content'
     weight          1
     label_plural    'Kiosks'
+
+    # Show slug when kiosks are displayed elsewhere
     object_label_method :slug
 
-    list   { field :name; field :slug; field :catalog_url; field :kiosk_group }
-    edit   { field :name; field :slug; field :catalog_url; field :kiosk_group; field :slides }
+    list do
+      field :name
+      field :slug
+      field :catalog_url
+      field :kiosk_group
+    end
+
+    edit do
+      field :name
+      field :slug
+      field :catalog_url
+      field :kiosk_group
+      field :slides
+    end
   end
 
   ### Slide ###
@@ -68,30 +92,20 @@ RailsAdmin.config do |config|
     object_label_method :rails_admin_label
 
     list do
-      # Preview thumbnail → links to the Edit page
+      # Restore the plain image preview (no edit link)
       field :image do
         label      'Preview'
         sortable   false
         formatted_value do
-          slide = bindings[:object]
-          if slide.image.attached?
-            variant = slide.image.variant(resize_to_limit: [100, 100]).processed
+          if (img = bindings[:object].image).attached?
+            variant = img.variant(resize_to_limit: [100, 100]).processed
             url     = Rails.application.routes.url_helpers.rails_representation_url(
                         variant,
                         host: bindings[:view].request.base_url
                       )
-            img_tag = bindings[:view].tag.img(src: url, width: 100, height: 100)
-            # Wrap the thumbnail in an Edit link
-            bindings[:view].link_to(
-              img_tag,
-              bindings[:view].rails_admin.edit_path(
-                model_name: 'slide',
-                id: slide.id
-              ),
-              title: "Edit Slide ##{slide.id}"
-            )
+            bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
-            "-"
+            '-'
           end
         end
       end
@@ -101,7 +115,7 @@ RailsAdmin.config do |config|
       field :start_date
       field :end_date
 
-      # Default HABTM display for kiosks
+      # Default HABTM display on kiosks
       field :kiosks do
         label    'Assigned Kiosks'
         sortable false
