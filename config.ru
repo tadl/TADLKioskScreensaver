@@ -1,6 +1,8 @@
-# This file is used by Rack-based servers to start the application.
+# config.ru
 
-require_relative "config/environment"
+# Load the Rails application
+require_relative 'config/environment'
 
+# Then hand off to Rails
 run Rails.application
-Rails.application.load_server
+

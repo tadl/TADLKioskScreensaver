@@ -15,8 +15,6 @@
       <% if @slides.any? %>
         <img
           id="screensaver-image"
-          src="<%= url_for(@slides.first.image) %>"
-          alt="<%= @slides.first.title %>"
           style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;"
         />
       <% else %>
@@ -28,31 +26,56 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
+        // Build the slide list (URL, duration, optional alt text)
         const slides = [
           <% @slides.each do |s| %>
-            { url: "<%= url_for(s.image) %>", duration: <%= s.display_seconds %> },
+            {
+              url:      "<%= url_for(s.image) %>",
+              duration: <%= s.display_seconds %>,
+              title:    "<%= j s.title %>"
+            },
           <% end %>
         ];
+
+        if (!slides.length) return;
+
+        // Fisher–Yates shuffle once on load
+        for (let i = slides.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [slides[i], slides[j]] = [slides[j], slides[i]];
+        }
+
         let idx = 0;
-        const img = document.getElementById("screensaver-image");
+        const img     = document.getElementById("screensaver-image");
         const exitUrl = "<%= @exit_url %>";
+
+        function showCurrentSlide() {
+          img.src = slides[idx].url;
+          img.alt = slides[idx].title || "";
+        }
 
         function nextSlide() {
           idx = (idx + 1) % slides.length;
-          img.src = slides[idx].url;
+          showCurrentSlide();
           schedule();
         }
+
         function schedule() {
           clearTimeout(window._timer);
-          window._timer = setTimeout(nextSlide, slides[idx].duration * 1000);
-        }
-        function exitNow() {
-          window.location.href = exitUrl;
+          window._timer = setTimeout(
+            nextSlide,
+            slides[idx].duration * 1000
+          );
         }
 
-        if (slides.length) schedule();
-        document.addEventListener("mousemove", exitNow, { once: true });
-        document.addEventListener("keydown",  exitNow, { once: true });
+        // Start
+        showCurrentSlide();
+        schedule();
+
+        // Exit on any user interaction
+        const exit = () => window.location = exitUrl;
+        document.addEventListener("mousemove", exit, { once: true });
+        document.addEventListener("keydown",   exit, { once: true });
       });
     </script>
   </body>

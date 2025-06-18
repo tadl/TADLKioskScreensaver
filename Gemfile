@@ -44,6 +44,7 @@ gem "image_processing", "~> 1.2"
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ]
+  gem "dotenv-rails", require: "dotenv/load"
 end
 
 group :development do
@@ -68,3 +69,6 @@ gem "sassc-rails"
 gem "rails_admin", "~> 3.3"
 gem "cssbundling-rails"
 gem "mini_magick"
+gem "omniauth"
+gem "omniauth-google-oauth2"
+gem "cancancan"
