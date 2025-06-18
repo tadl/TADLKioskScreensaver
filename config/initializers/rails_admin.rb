@@ -18,6 +18,7 @@ RailsAdmin.config do |config|
     edit
     delete
 
+    # “Show in app” opens the raw image
     show_in_app do
       only ['Slide']
       link_icon 'fa fa-image'
@@ -53,23 +54,10 @@ RailsAdmin.config do |config|
     navigation_label 'Content'
     weight          1
     label_plural    'Kiosks'
-    # Use slug as the label for associations
     object_label_method :slug
 
-    list do
-      field :name
-      field :slug
-      field :catalog_url
-      field :kiosk_group
-    end
-
-    edit do
-      field :name
-      field :slug
-      field :catalog_url
-      field :kiosk_group
-      field :slides
-    end
+    list   { field :name; field :slug; field :catalog_url; field :kiosk_group }
+    edit   { field :name; field :slug; field :catalog_url; field :kiosk_group; field :slides }
   end
 
   ### Slide ###
@@ -80,20 +68,30 @@ RailsAdmin.config do |config|
     object_label_method :rails_admin_label
 
     list do
-      # Preview thumbnail
+      # Preview thumbnail → links to the Edit page
       field :image do
-        label    'Preview'
-        sortable false
+        label      'Preview'
+        sortable   false
         formatted_value do
-          if (img = bindings[:object].image).attached?
-            variant = img.variant(resize_to_limit: [100, 100]).processed
+          slide = bindings[:object]
+          if slide.image.attached?
+            variant = slide.image.variant(resize_to_limit: [100, 100]).processed
             url     = Rails.application.routes.url_helpers.rails_representation_url(
                         variant,
                         host: bindings[:view].request.base_url
                       )
-            bindings[:view].tag.img(src: url, width: 100, height: 100)
+            img_tag = bindings[:view].tag.img(src: url, width: 100, height: 100)
+            # Wrap the thumbnail in an Edit link
+            bindings[:view].link_to(
+              img_tag,
+              bindings[:view].rails_admin.edit_path(
+                model_name: 'slide',
+                id: slide.id
+              ),
+              title: "Edit Slide ##{slide.id}"
+            )
           else
-            '-'
+            "-"
           end
         end
       end
@@ -103,9 +101,9 @@ RailsAdmin.config do |config|
       field :start_date
       field :end_date
 
-      # Default HABTM display, now using slug labels:
+      # Default HABTM display for kiosks
       field :kiosks do
-        label 'Assigned Kiosks'
+        label    'Assigned Kiosks'
         sortable false
       end
     end
