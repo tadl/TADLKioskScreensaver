@@ -25,12 +25,11 @@ RailsAdmin.config do |config|
         proc do
           slide = @abstract_model.model.find(params[:id])
           if slide.image.attached?
-            url = Rails.application.routes.url_helpers.rails_blob_url(
+            redirect_to Rails.application.routes.url_helpers.rails_blob_url(
               slide.image,
               host: request.base_url,
               disposition: "inline"
-            )
-            redirect_to url, allow_other_host: true
+            ), allow_other_host: true
           else
             flash[:error] = "No image attached"
             redirect_to back_or_index
@@ -40,32 +39,22 @@ RailsAdmin.config do |config|
     end
   end
 
-  ### Models ###
-
-  # KioskGroup
+  ### KioskGroup ###
   config.model 'KioskGroup' do
     navigation_label 'Content'
     weight          0
     label_plural    'Kiosk Groups'
-
-    list do
-      field :name
-      field :slug
-      field :kiosks
-    end
-
-    edit do
-      field :name
-      field :slug
-      field :kiosks
-    end
+    list   { field :name; field :slug; field :kiosks }
+    edit   { field :name; field :slug; field :kiosks }
   end
 
-  # Kiosk
+  ### Kiosk ###
   config.model 'Kiosk' do
     navigation_label 'Content'
     weight          1
     label_plural    'Kiosks'
+    # Use slug as the label for associations
+    object_label_method :slug
 
     list do
       field :name
@@ -83,35 +72,28 @@ RailsAdmin.config do |config|
     end
   end
 
-  # Slide (with working preview column)
+  ### Slide ###
   config.model 'Slide' do
     navigation_label 'Content'
     weight          2
     label_plural    'Slides'
-
     object_label_method :rails_admin_label
 
     list do
+      # Preview thumbnail
       field :image do
-        label 'Preview'
+        label    'Preview'
         sortable false
-
-        # We use formatted_value to return HTML-safe <img> tag
         formatted_value do
-          if bindings[:object].image.attached?
-            # Generate a 100×100 variant and get a public service URL
-            variant = bindings[:object]
-                        .image
-                        .variant(resize_to_limit: [100, 100])
-                        .processed
-            url = Rails.application.routes.url_helpers.rails_representation_url(
-              variant,
-              host: bindings[:view].request.base_url
-            )
-            # Render an <img> tag
+          if (img = bindings[:object].image).attached?
+            variant = img.variant(resize_to_limit: [100, 100]).processed
+            url     = Rails.application.routes.url_helpers.rails_representation_url(
+                        variant,
+                        host: bindings[:view].request.base_url
+                      )
             bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
-            "-"
+            '-'
           end
         end
       end
@@ -120,7 +102,12 @@ RailsAdmin.config do |config|
       field :display_seconds
       field :start_date
       field :end_date
-      field :kiosks
+
+      # Default HABTM display, now using slug labels:
+      field :kiosks do
+        label 'Assigned Kiosks'
+        sortable false
+      end
     end
 
     edit do
