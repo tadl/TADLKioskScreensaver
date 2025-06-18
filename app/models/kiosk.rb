@@ -1,4 +1,5 @@
 class Kiosk < ApplicationRecord
+  belongs_to :kiosk_group, optional: true
   has_and_belongs_to_many :slides
 
   validates :name,        presence: true

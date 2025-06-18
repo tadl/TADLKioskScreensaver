@@ -1,33 +1,13 @@
+# config/initializers/rails_admin.rb
+
 RailsAdmin.config do |config|
-  config.asset_source = :importmap
+  # Use importmap for your app assets, then sprockets for RailsAdmin’s
+  config.asset_source    = :importmap
+  config.main_app_name   = [ "Kiosk Screensaver", "Admin" ]
+  config.included_models = ['KioskGroup', 'Kiosk', 'Slide']
+  config.asset_source    = :sprockets
 
-  config.main_app_name = [ "Kiosk Screensaver", "Admin" ]
-  config.included_models = ['Kiosk','Slide']
-  config.asset_source = :sprockets
-
-  ### Popular gems integration
-
-  ## == Devise ==
-  # config.authenticate_with do
-  #   warden.authenticate! scope: :user
-  # end
-  # config.current_user_method(&:current_user)
-
-  ## == CancanCan ==
-  # config.authorize_with :cancancan
-
-  ## == Pundit ==
-  # config.authorize_with :pundit
-
-  ## == PaperTrail ==
-  # config.audit_with :paper_trail, 'User', 'PaperTrail::Version' # PaperTrail >= 3.0.0
-
-  ### More at https://github.com/railsadminteam/rails_admin/wiki/Base-configuration
-
-  ## == Gravatar integration ==
-  ## To disable Gravatar integration in Navigation Bar set to false
-  # config.show_gravatar = true
-
+  ### Actions ###
   config.actions do
     dashboard                     # mandatory
     index                         # mandatory
@@ -38,15 +18,14 @@ RailsAdmin.config do |config|
     edit
     delete
 
+    # Show in app → open the raw image for Slides
     show_in_app do
-      only ['Slide']             # only apply this override for Slide objects
-      link_icon 'fa fa-image'    # swap to an image icon (optional)
-
+      only ['Slide']
+      link_icon 'fa fa-image'
       controller do
         proc do
           slide = @abstract_model.model.find(params[:id])
           if slide.image.attached?
-            # Use rails_blob_url to get a direct link to the image
             url = Rails.application.routes.url_helpers.rails_blob_url(
               slide.image,
               host: request.base_url,
@@ -57,28 +36,70 @@ RailsAdmin.config do |config|
             flash[:error] = "No image attached"
             redirect_to back_or_index
           end
-
         end
       end
     end
-
-    ## With an audit adapter, you can add:
-    # history_index
-    # history_show
   end
 
+  ### Models ###
+
+  # 1) KioskGroup admin UI
+  config.model 'KioskGroup' do
+    navigation_label 'Content'
+    weight          0
+    label_plural    'Kiosk Groups'
+
+    list do
+      field :name
+      field :slug
+      field :kiosks
+    end
+
+    edit do
+      field :name
+      field :slug
+      field :kiosks
+    end
+  end
+
+  # 2) Kiosk admin UI
   config.model 'Kiosk' do
     navigation_label 'Content'
-    weight 1
-    label_plural 'Kiosks'
+    weight          1
+    label_plural    'Kiosks'
+
+    list do
+      field :name
+      field :slug
+      field :catalog_url
+      field :kiosk_group
+    end
+
+    edit do
+      field :name
+      field :slug
+      field :catalog_url
+      field :kiosk_group
+      field :slides
+    end
   end
 
+  # 3) Slide admin UI
   config.model 'Slide' do
     navigation_label 'Content'
-    weight 2
-    label_plural 'Slides'
+    weight          2
+    label_plural    'Slides'
 
+    # Use your custom label method
     object_label_method :rails_admin_label
+
+    list do
+      field :title
+      field :display_seconds
+      field :start_date
+      field :end_date
+      field :kiosks
+    end
 
     edit do
       field :title
@@ -88,7 +109,6 @@ RailsAdmin.config do |config|
       field :end_date
       field :kiosks
     end
-
   end
-
 end
+
