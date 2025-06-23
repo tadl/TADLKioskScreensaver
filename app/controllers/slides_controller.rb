@@ -67,7 +67,7 @@ class SlidesController < ApplicationController
     def slide_params
         params.require(:slide).permit(
             :title, :link, :display_seconds,
-            :start_date, :end_date, :image, :kiosk_ids: []
+            :start_date, :end_date, :image, kiosk_ids: []
         )
     end
 end
