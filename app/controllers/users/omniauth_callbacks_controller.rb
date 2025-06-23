@@ -1,17 +1,24 @@
 # app/controllers/users/omniauth_callbacks_controller.rb
-class Users::OmniauthCallbacksController < Devise::OmniauthCallbacksController
-  def google_oauth2
-    user = User.from_omniauth(request.env['omniauth.auth'])
-    if user
-      sign_in_and_redirect user, event: :authentication
-    else
-      redirect_to new_user_session_path,
-                  alert: 'Only tadl.org accounts may sign in.'
-    end
-  end
+module Users
+  class OmniauthCallbacksController < ApplicationController
+    # GET|POST /auth/google_oauth2/callback
+    def google_oauth2
+      auth = request.env['omniauth.auth']
+      user = User.from_omniauth(auth)
 
-  def failure
-    redirect_to root_path, alert: 'Authentication failed.'
+      if user
+        # “Log in” by writing into the session
+        session[:user_id] = user.id
+        redirect_to main_app.admin_path, notice: "Signed in as #{user.name}"
+      else
+        redirect_to main_app.sign_in_path, alert: 'Only tadl.org accounts may sign in.'
+      end
+    end
+
+    # GET|POST /auth/failure
+    def failure
+      redirect_to main_app.root_path, alert: "Authentication failed: #{params[:message]}"
+    end
   end
 end
 
