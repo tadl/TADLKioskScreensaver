@@ -1,31 +1,26 @@
 # config/initializers/rails_admin.rb
 
 RailsAdmin.config do |config|
+  # subclass your ApplicationController so you get its helpers
+  config.parent_controller = '::ApplicationController'
+
   # == Authentication ==
   config.authenticate_with do
-    unless session[:user_id]
-      redirect_to main_app.sign_in_path
-    end
+    redirect_to main_app.sign_in_path unless user_signed_in?
   end
 
+  # current_user comes from your ApplicationController#current_user
+  config.current_user_method(&:current_user)
+
   # == Authorization ==
-  # Only allow admins (based on session[:user_id]) to access RailsAdmin
-  config.authorize_with do |controller|
-    user = User.find_by(id: controller.session[:user_id])
-    unless user&.admin?
-      controller.flash[:error] = 'You are not authorized to access that page.'
-      controller.redirect_to controller.main_app.sign_in_path
-    end
-  end
+  config.authorize_with :cancancan
 
   # == UI ==
   config.main_app_name   = ['Kiosk Screensaver', 'Admin']
-  config.included_models = ['KioskGroup', 'Kiosk', 'Slide']
+  config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
 
-  # Put a Sign In/Out section in the sidebar
   config.navigation_static_label = 'Account'
   config.navigation_static_links = {
-    'Sign in'  => '/sign_in',
     'Sign out' => '/sign_out'
   }
 
@@ -41,6 +36,26 @@ RailsAdmin.config do |config|
     delete
   end
 
+  # == Permission ==
+  config.model 'Permission' do
+    visible do
+      # now bindings[:controller] will be available
+      bindings[:controller].current_ability.can?(:manage, Permission)
+    end
+  end
+
+  # == UserPermission ==
+  config.model 'UserPermission' do
+    visible do
+      bindings[:controller].current_ability.can?(:manage, UserPermission)
+    end
+
+    list do
+      field :user
+      field :permission
+    end
+  end
+
   # == KioskGroup ==
   config.model 'KioskGroup' do
     navigation_label 'Content'
@@ -54,9 +69,21 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      field :name
-      field :slug
-      field :kiosks
+      field :name do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
+      field :slug do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
+      field :kiosks do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
     end
   end
 
@@ -75,11 +102,31 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      field :slides
-      field :name
-      field :slug
-      field :catalog_url
-      field :kiosk_group
+      field :slides do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
+      end
+      field :name do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :slug do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :catalog_url do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :kiosk_group do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
     end
   end
 
@@ -113,7 +160,6 @@ RailsAdmin.config do |config|
       field :display_seconds
       field :start_date
       field :end_date
-
       field :kiosks do
         label    'Assigned Kiosks'
         sortable false
@@ -126,7 +172,11 @@ RailsAdmin.config do |config|
       field :display_seconds
       field :start_date
       field :end_date
-      field :kiosks
+      field :kiosks do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
+      end
     end
   end
 end

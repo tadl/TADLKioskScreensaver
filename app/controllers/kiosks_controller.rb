@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class KiosksController < ApplicationController
-  before_action :set_kiosk, only: %i[edit update destroy]
+  before_action :require_edit_permission, only: %i[new create edit update destroy]
 
   def index
     @kiosks = Kiosk.all
@@ -37,6 +37,12 @@ class KiosksController < ApplicationController
   end
 
   private
+
+  def require_edit_permission
+    unless current_user.can?('manage_kiosks')
+      redirect_to root_path, alert: 'You lack permission to manage kiosks'
+    end
+  end
 
   def set_kiosk
     @kiosk = Kiosk.find(params[:id])

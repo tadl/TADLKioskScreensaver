@@ -13,5 +13,15 @@ class User < ApplicationRecord
   def avatar_url
     image_url.presence || GravatarBuilder.new(email).url
   end
+
+  # associations for permissions
+  has_many :user_permissions, dependent: :destroy
+  has_many :permissions, through: :user_permissions
+
+  # convenience checker
+  def can?(perm_name)
+    permissions.exists?(name: perm_name.to_s)
+  end
+
 end
 
