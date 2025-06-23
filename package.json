@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "build:css": "sass ./app/assets/stylesheets/rails_admin.scss:./app/assets/builds/rails_admin.css --no-source-map --load-path=node_modules"
+    "build:css": "sass ./app/assets/stylesheets/application.sass.scss:./app/assets/builds/application.css ./app/assets/stylesheets/rails_admin.scss:./app/assets/builds/rails_admin.css --no-source-map --load-path=node_modules"
   },
   "name": "TADLKioskScreensaver",
   "version": "1.0.0",
@@ -10,5 +10,8 @@
   "license": "MIT",
   "devDependencies": {
     "sass": "^1.89.2"
+  },
+  "dependencies": {
+    "rails_admin": "3.3.0"
   }
 }

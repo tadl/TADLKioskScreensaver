@@ -1,6 +1,7 @@
 # config/initializers/rails_admin.rb
 
 RailsAdmin.config do |config|
+  config.asset_source = :importmap
   # subclass your ApplicationController so you get its helpers
   config.parent_controller = '::ApplicationController'
 
