@@ -16,6 +16,7 @@
         "dokku-postgres"
     ],
     "buildpacks": [
+        { "url": "herokuk/nodejs" },
         { "url": "heroku/ruby" }
     ]
 }
