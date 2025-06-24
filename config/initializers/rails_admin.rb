@@ -2,15 +2,12 @@
 
 RailsAdmin.config do |config|
   config.asset_source = :importmap
-  # subclass your ApplicationController so you get its helpers
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
   config.authenticate_with do
     redirect_to main_app.sign_in_path unless user_signed_in?
   end
-
-  # current_user comes from your ApplicationController#current_user
   config.current_user_method(&:current_user)
 
   # == Authorization ==
@@ -19,7 +16,6 @@ RailsAdmin.config do |config|
   # == UI ==
   config.main_app_name   = ['Kiosk Screensaver', 'Admin']
   config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
-
   config.navigation_static_label = 'Account'
   config.navigation_static_links = {
     'Sign out' => '/sign_out'
@@ -39,16 +35,12 @@ RailsAdmin.config do |config|
 
   # == Permission ==
   config.model 'Permission' do
-    visible do
-      bindings[:controller].current_ability.can?(:manage, Permission)
-    end
+    visible { bindings[:controller].current_ability.can?(:manage, Permission) }
   end
 
   # == UserPermission ==
   config.model 'UserPermission' do
-    visible do
-      bindings[:controller].current_ability.can?(:manage, UserPermission)
-    end
+    visible { bindings[:controller].current_ability.can?(:manage, UserPermission) }
 
     list do
       field :user
@@ -128,9 +120,9 @@ RailsAdmin.config do |config|
         formatted_value do
           slide = bindings[:object]
           if slide.image.attached?
-            v   = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url = Rails.application.routes.url_helpers.rails_representation_url(
-              v,
+            thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
+            url   = Rails.application.routes.url_helpers.rails_representation_url(
+              thumb,
               host: bindings[:view].request.base_url
             )
             bindings[:view].tag.img(src: url, width: 100, height: 100)
@@ -153,21 +145,22 @@ RailsAdmin.config do |config|
     edit do
       field :title
 
-      # <-- Custom image field to avoid signed_id on new records -->
+      # only for persisted records will we emit a signed_id,
+      # avoiding the "Cannot get a signed_id for a new record" crash
       field :image, :active_storage do
         cache_value do
-          obj = bindings[:object]
-          if obj.image.attached? && obj.image.blob.persisted?
-            obj.image.blob.signed_id
+          record = bindings[:object]
+          if record.persisted? && record.image.attached?
+            record.image.signed_id
           end
         rescue
           nil
         end
 
         resource_url do
-          obj = bindings[:object]
-          if obj.image.attached? && obj.image.blob.persisted?
-            bindings[:view].url_for(obj.image)
+          record = bindings[:object]
+          if record.image.attached?
+            bindings[:view].url_for(record.image)
           end
         rescue
           nil
