@@ -1,15 +1,13 @@
 # config/initializers/rails_admin.rb
 
 RailsAdmin.config do |config|
-  config.asset_source      = :importmap
-  config.parent_controller = '::ApplicationController'
+  config.asset_source       = :importmap
+  config.parent_controller  = '::ApplicationController'
 
   # == Authentication ==
   config.authenticate_with do
     redirect_to main_app.sign_in_path unless user_signed_in?
   end
-
-  # current_user comes from your ApplicationController#current_user
   config.current_user_method(&:current_user)
 
   # == Authorization ==
@@ -48,7 +46,6 @@ RailsAdmin.config do |config|
     visible do
       bindings[:controller].current_ability.can?(:manage, UserPermission)
     end
-
     list do
       field :user
       field :permission
@@ -68,18 +65,30 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      field(:name)  { read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) } }
-      field(:slug)  { read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) } }
-      field(:kiosks){ read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) } }
+      field :name do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
+      field :slug do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
+      field :kiosks do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
     end
   end
 
   # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label       'Content'
-    weight                 1
-    label_plural           'Kiosks'
-    object_label_method    :slug
+    navigation_label 'Content'
+    weight          1
+    label_plural    'Kiosks'
+    object_label_method :slug
 
     list do
       field :name
@@ -89,47 +98,44 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      field(:slides){ read_only { !bindings[:controller].current_ability.can?(:manage, Slide) } }
-      field(:name)  { read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) } }
-      field(:slug)  { read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) } }
-      field(:catalog_url){ read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) } }
-      field(:kiosk_group){ read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) } }
+      field :slides do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
+      end
+      field :name do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :slug do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :catalog_url do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :kiosk_group do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
     end
   end
 
   # == Slide ==
   config.model 'Slide' do
-    navigation_label    'Content'
-    weight              2
-    label_plural        'Slides'
+    navigation_label 'Content'
+    weight          2
+    label_plural    'Slides'
     object_label_method :rails_admin_label
 
     list do
-      field :image do
-        label    'Preview'
-        sortable false
-
-        formatted_value do
-          # guard against dashboard or any non-view context
-          unless defined?(bindings) && bindings[:object] && bindings[:view]
-            next '-'
-          end
-
-          slide = bindings[:object]
-          if slide.image.attached?
-            variant = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url     = Rails.application.routes.url_helpers.
-                        rails_representation_url(variant,
-                                                 host: bindings[:view].request.base_url)
-            bindings[:view].tag.img(src: url, width: 100, height: 100)
-          else
-            '-'
-          end
-        rescue StandardError
-          '-'
-        end
-      end
-
+      # just show the attachment-link
+      field :image, :active_storage
       field :title
       field :display_seconds
       field :start_date
@@ -143,24 +149,18 @@ RailsAdmin.config do |config|
     edit do
       field :title
 
+      # use the built-in ActiveStorage uploader, but turn off cache on new records
       field :image, :active_storage do
-        cache_value do
-          # only attempt to read a cache when we actually have a persisted record
-          record = (defined?(bindings) && bindings[:object])
-          if record&.persisted?
-            attach = record.send(name)
-            attach.signed_id if attach.attached?
-          end
-        rescue StandardError
-          nil
-        end
+        cache_method false
       end
 
       field :display_seconds
       field :start_date
       field :end_date
       field :kiosks do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
       end
     end
   end
