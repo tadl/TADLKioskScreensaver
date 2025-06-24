@@ -27,7 +27,6 @@ RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
 end
 
 RailsAdmin.config do |config|
-  config.asset_source      = :importmap
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
