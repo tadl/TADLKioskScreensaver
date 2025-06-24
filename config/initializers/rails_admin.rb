@@ -1,9 +1,25 @@
 # config/initializers/rails_admin.rb
 
 # ——————————————————————————————————————————————————————————————
-# Monkey‐patch ActiveStorage field so we never call signed_id
-# on a blob that hasn’t hit the database yet, and we only
-# try to preview persisted blobs.
+# 1) Downgrade Turbo-Stream requests to plain HTML so RailsAdmin
+#    never chokes on Accept: text/vnd.turbo-stream.html
+# ——————————————————————————————————————————————————————————————
+RailsAdmin::MainController.class_eval do
+  before_action :downgrade_turbo_stream_format!
+
+  private
+
+  def downgrade_turbo_stream_format!
+    if request.format.turbo_stream?
+      request.format = :html
+    end
+  end
+end
+
+# ——————————————————————————————————————————————————————————————
+# 2) Monkey-patch ActiveStorage field so we never call signed_id
+#    on a blob that hasn’t hit the database yet, and we only
+#    try to preview persisted blobs.
 # ——————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
   # override the URL builder so it only fires when blob.persisted?
@@ -23,13 +39,13 @@ RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
     blob = bindings[:object].public_send(name)&.blob
     if blob&.persisted?
       view = bindings[:view]
-      url = view.rails_blob_path(blob, host: view.request.base_url)
+      url  = view.rails_blob_path(blob, host: view.request.base_url)
       view.tag.img(src: url, style: 'max-width: 200px;')
     end
   end
 end
 
-# Monkey‐patch the generic FileUpload type too, so it never
+# Monkey-patch the generic FileUpload type too, so it never
 # tries to call image_tag(nil) and blow up.
 RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
   register_instance_option :pretty_value do
