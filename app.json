@@ -24,6 +24,7 @@
         }
     },
     "buildpacks": [
+        { "url": "heroku-community/apt" },
         { "url": "herokuk/nodejs" },
         { "url": "heroku/ruby" }
     ]
