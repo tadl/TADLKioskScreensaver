@@ -14,8 +14,12 @@ class Ability
       return
     end
 
-    # everyone can read all resources
+    # everyone (including guests) can read all resources
     can :read, :all
+
+    # allow everyone who can read to at least access the admin UI
+    can :access, :rails_admin   # grants permission to enter RailsAdmin
+    can :dashboard, :all        # grants permission to view the dashboard
 
     # slide management
     can :manage, Slide if user.can?('manage_slides')
