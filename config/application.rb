@@ -1,3 +1,5 @@
+# config/application.rb
+
 require_relative "boot"
 
 require "rails"
@@ -27,6 +29,10 @@ module KioskScreensaver
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w(assets tasks))
+
+    # Disable all Rails-generated remote forms so RailsAdmin will use
+    # standard HTML form posts (no Turbo/XHR). This fixes the 406 on slide uploads.
+    config.action_view.form_with_generates_remote_forms = false
 
     # Configuration for the application, engines, and railties goes here.
     #
