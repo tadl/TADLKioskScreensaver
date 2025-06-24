@@ -3,6 +3,10 @@
 require 'omniauth'
 require 'omniauth-google-oauth2'
 
+if Rails.env.production?
+  OmniAuth.config.full_host = 'https://kiosks.tadl.org'
+end
+
 # Re-enable GET (and silence the warning)
 OmniAuth.config.allowed_request_methods = %i[get post]
 OmniAuth.config.silence_get_warning    = true
@@ -18,7 +22,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
       {
         scope:  'userinfo.email,userinfo.profile',
         hd:     'tadl.org',
-        prompt: 'select_account'
+        prompt: 'select_account',
       }
   else
     Rails.logger.warn "[OmniAuth] Skipping Google provider: GOOGLE_CLIENT_ID/SECRET not set"
