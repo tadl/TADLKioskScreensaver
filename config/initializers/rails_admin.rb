@@ -2,21 +2,47 @@
 
 Rails.application.config.to_prepare do
   #
-  # 1) Disable Turbo on RailsAdmin forms to prevent 406 errors on file uploads
+  # 1) Disable remote (AJAX/Turbo) for all RailsAdmin forms
   #
-  if defined?(RailsAdmin::MainHelper)
-    RailsAdmin::MainHelper.prepend(Module.new do
-      # This wraps the original rails_admin_form_for and injects data-turbo="false"
-      def rails_admin_form_for(model, options = {}, &block)
-        options[:html] ||= {}
-        options[:html].merge!('data-turbo' => false)
-        super(model, options, &block)
+  begin
+    require 'rails_admin/main_helper'
+    RailsAdmin::MainHelper.module_eval do
+      # Re-define the helper to always submit as a normal HTML POST
+      def rails_admin_form_for(object, options = {}, &block)
+        options = options.dup
+        options[:local] = true
+        super(object, options, &block)
       end
-    end)
+    end
+  rescue LoadError
+    # will try again on next to_prepare
   end
 
   #
-  # 2) Monkey-patch ActiveStorage field so we only preview persisted blobs
+  # 2) Coerce any Turbo Stream or XHR request over to HTML so RailsAdmin
+  #    will match its format.html respond_to block (instead of 406).
+  #
+  begin
+    require 'rails_admin/application_controller'
+    RailsAdmin::ApplicationController.class_eval do
+      before_action :rails_admin_force_html
+
+      private
+
+      def rails_admin_force_html
+        # if Turbo or XHR is asking for .turbo_stream, treat it as HTML
+        if request.format == Mime[:turbo_stream] || request.xhr?
+          request.format = :html
+        end
+      end
+    end
+  rescue LoadError
+    # will try again on next to_prepare
+  end
+
+  #
+  # 3) Monkey-patch ActiveStorage fields so you never try to preview
+  #    blobs that haven’t been persisted yet.
   #
   if defined?(RailsAdmin::Config::Fields::Types::ActiveStorage)
     RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
@@ -43,13 +69,13 @@ Rails.application.config.to_prepare do
   end
 
   #
-  # 3) Monkey-patch generic FileUpload so it doesn’t blow up on nil URLs
+  # 4) Monkey-patch generic FileUpload so it never blows up when
+  #    resource_url is nil.
   #
   if defined?(RailsAdmin::Config::Fields::Types::FileUpload)
     RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
       register_instance_option :pretty_value do
-        url = resource_url
-        if url.present?
+        if (url = resource_url).present?
           bindings[:view].tag.img(src: url, style: 'max-width: 200px;')
         end
       end
@@ -58,10 +84,10 @@ Rails.application.config.to_prepare do
 end
 
 #
-# 4) Your normal RailsAdmin.config block, unchanged
+# 5) Your normal RailsAdmin.config block
 #
 RailsAdmin.config do |config|
-  config.asset_source      = :importmap
+  config.asset_source      = :importmap   # or :webpacker etc.
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
