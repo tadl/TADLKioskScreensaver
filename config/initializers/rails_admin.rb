@@ -2,18 +2,19 @@
 
 Rails.application.config.to_prepare do
   #
-  # 1) Force all RailsAdmin forms to submit without Turbo/AJAX
+  # 1) Disable Turbo/AJAX on all RailsAdmin forms
   #
-  require 'rails_admin/main_helper'
-  RailsAdmin::MainHelper.module_eval do
-    def rails_admin_form_for(object, **options, &block)
-      # make it a plain HTML form
-      options[:local] = true
-      options[:html] ||= {}
-      options[:html]['data-turbo'] = false
-
-      super(object, **options, &block)
+  begin
+    RailsAdmin::MainHelper.module_eval do
+      def rails_admin_form_for(object, **options, &block)
+        options[:local] ||= true
+        options[:html]    ||= {}
+        options[:html]['data-turbo'] = false
+        super(object, **options, &block)
+      end
     end
+  rescue NameError
+    # RailsAdmin::MainHelper not loaded yet—will retry on next to_prepare
   end
 
   #
@@ -56,7 +57,7 @@ Rails.application.config.to_prepare do
 end
 
 #
-# 4) Your normal RailsAdmin.config block
+# 4) The regular RailsAdmin config
 #
 RailsAdmin.config do |config|
   config.asset_source      = :importmap
