@@ -1,8 +1,8 @@
 # config/initializers/rails_admin.rb
 
 RailsAdmin.config do |config|
-  config.asset_source = :importmap
-  config.parent_controller = '::ApplicationController'
+  config.asset_source        = :importmap
+  config.parent_controller   = '::ApplicationController'
 
   # == Authentication ==
   config.authenticate_with do
@@ -14,8 +14,8 @@ RailsAdmin.config do |config|
   config.authorize_with :cancancan
 
   # == UI ==
-  config.main_app_name   = ['Kiosk Screensaver', 'Admin']
-  config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
+  config.main_app_name            = ['Kiosk Screensaver', 'Admin']
+  config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
   config.navigation_static_label = 'Account'
   config.navigation_static_links = {
     'Sign out' => '/sign_out'
@@ -41,7 +41,6 @@ RailsAdmin.config do |config|
   # == UserPermission ==
   config.model 'UserPermission' do
     visible { bindings[:controller].current_ability.can?(:manage, UserPermission) }
-
     list do
       field :user
       field :permission
@@ -121,10 +120,8 @@ RailsAdmin.config do |config|
           slide = bindings[:object]
           if slide.image.attached?
             thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url   = Rails.application.routes.url_helpers.rails_representation_url(
-              thumb,
-              host: bindings[:view].request.base_url
-            )
+            url   = Rails.application.routes.url_helpers.
+                      rails_representation_url(thumb, host: bindings[:view].request.base_url)
             bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
             '-'
@@ -136,6 +133,7 @@ RailsAdmin.config do |config|
       field :display_seconds
       field :start_date
       field :end_date
+
       field :kiosks do
         label    'Assigned Kiosks'
         sortable false
@@ -145,23 +143,18 @@ RailsAdmin.config do |config|
     edit do
       field :title
 
-      # only for persisted records will we emit a signed_id,
-      # avoiding the "Cannot get a signed_id for a new record" crash
       field :image, :active_storage do
+        # only persisteds get a signed_id
         cache_value do
-          record = bindings[:object]
-          if record.persisted? && record.image.attached?
-            record.image.signed_id
-          end
+          rec = bindings[:object]
+          rec.persisted? && rec.image.attached? ? rec.image.signed_id : nil
         rescue
           nil
         end
 
         resource_url do
-          record = bindings[:object]
-          if record.image.attached?
-            bindings[:view].url_for(record.image)
-          end
+          rec = bindings[:object]
+          rec.image.attached? ? bindings[:view].url_for(rec.image) : nil
         rescue
           nil
         end
