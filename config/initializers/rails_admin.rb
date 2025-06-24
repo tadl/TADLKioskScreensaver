@@ -1,28 +1,24 @@
 # config/initializers/rails_admin.rb
 
-# ——————————————————————————————————————————————————————————————————————
-# 1) Downgrade any Turbo-Stream–format POSTs back to HTML
-#    so RailsAdmin’s create/update actions don’t return 406.
-#    Use after_initialize so RailsAdmin::MainController is defined.
-# ——————————————————————————————————————————————————————————————————————
-Rails.application.config.after_initialize do
-  if defined?(RailsAdmin::MainController)
-    RailsAdmin::MainController.class_eval do
-      before_action :downgrade_turbo_stream_format!
+# ————————————————————————————————————————————————————————————————
+# 1) Disable Turbo-Stream format for **all** RailsAdmin controllers,
+#    so create/update won’t return 406 Not Acceptable.
+# ————————————————————————————————————————————————————————————————
+RailsAdmin::ApplicationController.class_eval do
+  before_action :force_html_format_for_rails_admin
 
-      private
+  private
 
-      def downgrade_turbo_stream_format!
-        request.format = :html if request.format.turbo_stream?
-      end
-    end
+  def force_html_format_for_rails_admin
+    # if Turbo-Stream requested, treat it as plain HTML
+    request.format = :html if request.format.turbo_stream?
   end
 end
 
-# ——————————————————————————————————————————————————————————————————————
+# ————————————————————————————————————————————————————————————————
 # 2) Monkey-patch ActiveStorage fields so we never call signed_id
-#    on blobs that haven’t been saved yet, and only preview persisted blobs.
-# ——————————————————————————————————————————————————————————————————————
+#    on blobs that haven’t been persisted yet, and only preview persisted blobs.
+# ————————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
   register_instance_option :resource_url do
     attached = bindings[:object].public_send(name)
@@ -55,9 +51,9 @@ RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
   end
 end
 
-# ——————————————————————————————————————————————————————————————————————
-# 3) Your normal RailsAdmin config (unchanged from before)
-# ——————————————————————————————————————————————————————————————————————
+# ————————————————————————————————————————————————————————————————
+# 3) Your standard RailsAdmin configuration
+# ————————————————————————————————————————————————————————————————
 RailsAdmin.config do |config|
   config.asset_source      = :importmap
   config.parent_controller = '::ApplicationController'
