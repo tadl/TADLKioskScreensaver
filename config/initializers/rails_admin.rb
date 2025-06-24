@@ -2,47 +2,22 @@
 
 Rails.application.config.to_prepare do
   #
-  # 1) Disable remote (AJAX/Turbo) for all RailsAdmin forms
+  # 1) Force all RailsAdmin forms to submit without Turbo/AJAX
   #
-  begin
-    require 'rails_admin/main_helper'
-    RailsAdmin::MainHelper.module_eval do
-      # Re-define the helper to always submit as a normal HTML POST
-      def rails_admin_form_for(object, options = {}, &block)
-        options = options.dup
-        options[:local] = true
-        super(object, options, &block)
-      end
+  require 'rails_admin/main_helper'
+  RailsAdmin::MainHelper.module_eval do
+    def rails_admin_form_for(object, **options, &block)
+      # make it a plain HTML form
+      options[:local] = true
+      options[:html] ||= {}
+      options[:html]['data-turbo'] = false
+
+      super(object, **options, &block)
     end
-  rescue LoadError
-    # will try again on next to_prepare
   end
 
   #
-  # 2) Coerce any Turbo Stream or XHR request over to HTML so RailsAdmin
-  #    will match its format.html respond_to block (instead of 406).
-  #
-  begin
-    require 'rails_admin/application_controller'
-    RailsAdmin::ApplicationController.class_eval do
-      before_action :rails_admin_force_html
-
-      private
-
-      def rails_admin_force_html
-        # if Turbo or XHR is asking for .turbo_stream, treat it as HTML
-        if request.format == Mime[:turbo_stream] || request.xhr?
-          request.format = :html
-        end
-      end
-    end
-  rescue LoadError
-    # will try again on next to_prepare
-  end
-
-  #
-  # 3) Monkey-patch ActiveStorage fields so you never try to preview
-  #    blobs that haven’t been persisted yet.
+  # 2) Only preview persisted ActiveStorage blobs
   #
   if defined?(RailsAdmin::Config::Fields::Types::ActiveStorage)
     RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
@@ -50,10 +25,8 @@ Rails.application.config.to_prepare do
         attached = bindings[:object].public_send(name)
         blob     = attached&.blob
         if blob&.persisted?
-          Rails.application.routes.url_helpers.rails_blob_path(
-            blob,
-            host: bindings[:view].request.base_url
-          )
+          Rails.application.routes.url_helpers
+               .rails_blob_path(blob, host: bindings[:view].request.base_url)
         end
       end
 
@@ -69,8 +42,7 @@ Rails.application.config.to_prepare do
   end
 
   #
-  # 4) Monkey-patch generic FileUpload so it never blows up when
-  #    resource_url is nil.
+  # 3) Safe generic FileUpload preview
   #
   if defined?(RailsAdmin::Config::Fields::Types::FileUpload)
     RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
@@ -84,10 +56,10 @@ Rails.application.config.to_prepare do
 end
 
 #
-# 5) Your normal RailsAdmin.config block
+# 4) Your normal RailsAdmin.config block
 #
 RailsAdmin.config do |config|
-  config.asset_source      = :importmap   # or :webpacker etc.
+  config.asset_source      = :importmap
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
@@ -189,10 +161,8 @@ RailsAdmin.config do |config|
           slide = bindings[:object]
           if slide.image.attached?
             thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url   = Rails.application.routes.url_helpers.rails_representation_url(
-              thumb,
-              host: bindings[:view].request.base_url
-            )
+            url   = Rails.application.routes
+                         .rails_representation_url(thumb, host: bindings[:view].request.base_url)
             bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
             '-'
