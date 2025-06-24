@@ -1,24 +1,19 @@
 # config/initializers/rails_admin.rb
 
 # ——————————————————————————————————————————————————————————————
-# Monkey-patch ActiveStorage field so we only call signed_id
-# on blobs that have actually been saved.
+# Monkey-patch ActiveStorage field so we never call signed_id
+# on a blob that hasn’t been persisted yet.
 # ——————————————————————————————————————————————————————————————
-module RailsAdmin
-  module Config
-    module Fields
-      module Types
-        class ActiveStorage < RailsAdmin::Config::Fields::Types::FileUpload
-          RailsAdmin::Config::Fields::Types.register(self)
-
-          # override default cache_value to skip new blobs
-          register_instance_option :cache_value do
-            attached = bindings[:object].public_send(name)
-            blob     = attached&.blob
-            blob&.persisted? ? blob.signed_id : nil
-          end
-        end
-      end
+RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
+  register_instance_option :resource_url do
+    attached = bindings[:object].public_send(name)
+    blob     = attached&.blob
+    # only build a URL if the blob already exists in the DB
+    if blob&.persisted?
+      Rails.application.routes.url_helpers.rails_blob_path(
+        blob,
+        host: bindings[:view].request.base_url
+      )
     end
   end
 end
@@ -37,9 +32,8 @@ RailsAdmin.config do |config|
   config.authorize_with :cancancan
 
   # == UI ==
-  config.main_app_name   = ['Kiosk Screensaver', 'Admin']
-  config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
-
+  config.main_app_name        = ['Kiosk Screensaver', 'Admin']
+  config.included_models      = %w[KioskGroup Kiosk Slide Permission UserPermission]
   config.navigation_static_label = 'Account'
   config.navigation_static_links = {
     'Sign out' => '/sign_out'
@@ -59,16 +53,12 @@ RailsAdmin.config do |config|
 
   # == Permission ==
   config.model 'Permission' do
-    visible do
-      bindings[:controller].current_ability.can?(:manage, Permission)
-    end
+    visible { bindings[:controller].current_ability.can?(:manage, Permission) }
   end
 
   # == UserPermission ==
   config.model 'UserPermission' do
-    visible do
-      bindings[:controller].current_ability.can?(:manage, UserPermission)
-    end
+    visible { bindings[:controller].current_ability.can?(:manage, UserPermission) }
     list do
       field :user
       field :permission
@@ -88,44 +78,33 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      field :name do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
-      end
-      field :slug do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
-      end
-      field :kiosks do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+      %i[name slug kiosks].each do |f|
+        field f do
+          read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        end
       end
     end
   end
 
   # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label        'Content'
-    weight                  1
-    label_plural            'Kiosks'
-    object_label_method     :slug
+    navigation_label    'Content'
+    weight              1
+    label_plural        'Kiosks'
+    object_label_method :slug
 
     list do
-      field :name
-      field :slug
-      field :catalog_url
-      field :kiosk_group
+      %i[name slug catalog_url kiosk_group].each { |f| field f }
     end
 
     edit do
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
       end
-      field :name do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
-      end
-      field :slug do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
-      end
-      field :catalog_url do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+      %i[name slug catalog_url].each do |f|
+        field f do
+          read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+        end
       end
       field :kiosk_group do
         read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
@@ -159,10 +138,7 @@ RailsAdmin.config do |config|
         end
       end
 
-      field :title
-      field :display_seconds
-      field :start_date
-      field :end_date
+      %i[title display_seconds start_date end_date].each { |f| field f }
       field :kiosks do
         label    'Assigned Kiosks'
         sortable false
@@ -170,8 +146,13 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      field :title
-      field :display_seconds
+      field :title do
+        required false
+        help "If you leave this blank I'll auto-fill it from the filename."
+      end
+      field :display_seconds do
+        required false
+        help "If you leave this blank I'll default it to 10 seconds."
       field :start_date
       field :end_date
 
