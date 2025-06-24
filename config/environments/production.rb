@@ -8,84 +8,83 @@ Rails.application.configure do
   # Code is not reloaded between requests.
   config.enable_reloading = false
 
-  # Eager load code on boot. This eager loads most of Rails and
-  # your application in memory, allowing both threaded web servers
-  # and those relying on copy on write to perform better.
-  # Rake tasks automatically ignore this option for performance.
+  # Eager load code on boot.
   config.eager_load = true
 
-  # Full error reports are disabled and caching is turned on.
+  # Full error reports disabled, caching turned on.
   config.consider_all_requests_local       = false
   config.action_controller.perform_caching = true
 
-  # Store uploaded files on the local file system (see config/storage.yml for options).
+  # Store uploaded files on the local file system (see config/storage.yml).
   config.active_storage.service = :local
 
-  # Force all access over SSL, use Strict-Transport-Security, and use secure cookies.
+  # Force all access over SSL.
   config.force_ssl = true
 
-  # Disable serving static files from `public/`, relying on NGINX/Apache to do so instead.
-  # (let your webserver handle static assets)
-  config.public_file_server.enabled = ENV['RAILS_SERVE_STATIC_FILES'].present?
+  # Let NGINX/Apache serve static files; only enable if RAILS_SERVE_STATIC_FILES is set.
+  config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
 
-  # Compress CSS using a preprocessor.
+  # Do not fallback to asset pipeline if a precompiled asset is missed.
+  config.assets.compile = false
   config.assets.css_compressor = nil
 
-  # Do not fall back to assets pipeline if a precompiled asset is missed.
-  config.assets.compile = false
-
-  # Prepend all log lines with the following tags.
+  # Prepend log lines with request IDs.
   config.log_tags = [:request_id]
 
-  # Set log level from ENV (default to :info)
+  # Set level from ENV or default to :info
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info").to_sym
 
-  # -------------------------------------------------------------------
-  # ** dual logger setup: write to both log/production.log and to STDOUT **
-  # -------------------------------------------------------------------
+  # --------------------------------------------------
+  # Custom MultiIO logger: STDOUT + log/production.log
+  # --------------------------------------------------
 
-  # 1) build the file logger
-  file_logger = ActiveSupport::Logger.new(Rails.root.join("log", "production.log"))
-  file_logger.level     = Logger.const_get(config.log_level.to_s.upcase)
-  file_logger.formatter = config.log_formatter
+  # Open the file for append and sync writes immediately
+  file = File.open(Rails.root.join("log", "production.log"), "a")
+  file.sync = true
 
-  # 2) build the STDOUT logger
-  stdout_logger = ActiveSupport::Logger.new($stdout)
-  stdout_logger.level     = Logger.const_get(config.log_level.to_s.upcase)
-  stdout_logger.formatter = config.log_formatter
+  # Tiny class that fans out writes to both STDOUT and the file
+  class MultiIO
+    def initialize(*targets)
+      @targets = targets
+    end
 
-  # 3) broadcast STDOUT -> file
-  stdout_logger.extend(ActiveSupport::Logger.broadcast(file_logger))
+    def write(*args)
+      @targets.each { |t| t.write(*args) }
+    end
 
-  # 4) wrap in TaggedLogging
-  config.logger = ActiveSupport::TaggedLogging.new(stdout_logger)
+    def close
+      @targets.each(&:close)
+    end
 
-  # -------------------------------------------------------------------
-  # Everything else as before...
-  # -------------------------------------------------------------------
+    def flush
+      @targets.each(&:flush)
+    end
+  end
 
-  # Use a different cache store in production.
+  # Build a logger that writes to both
+  combined_io = MultiIO.new($stdout, file)
+  logger     = ActiveSupport::Logger.new(combined_io)
+  # Match your log level and formatting
+  logger.level     = Logger.const_get(config.log_level.to_s.upcase)
+  logger.formatter = config.log_formatter
+  # Wrap in TaggedLogging
+  config.logger    = ActiveSupport::TaggedLogging.new(logger)
+
+  # --------------------------------------------------
+  # Everything else unchanged from your prior file
+  # --------------------------------------------------
+
   # config.cache_store = :mem_cache_store
-
-  # Use a real queuing backend for Active Job.
   # config.active_job.queue_adapter     = :resque
   # config.active_job.queue_name_prefix = "kiosk_screensaver_production"
 
   config.action_mailer.perform_caching = false
-
-  # Enable locale fallbacks for I18n.
-  config.i18n.fallbacks = true
-
-  # Don't log any deprecations.
+  config.i18n.fallbacks                = true
   config.active_support.report_deprecations = false
-
-  # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
-  # Enable DNS rebinding protection and other `Host` header attacks.
+  # Host authorization / DNS rebinding protection, etc.
   # config.hosts = ["your.domain.com"]
-
-  # Skip DNS rebinding protection for the health check endpoint.
   # config.host_authorization = { exclude: ->(req) { req.path == "/up" } }
 end
 
