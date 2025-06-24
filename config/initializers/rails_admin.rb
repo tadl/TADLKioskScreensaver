@@ -1,23 +1,26 @@
 # config/initializers/rails_admin.rb
 
 # ——————————————————————————————————————————————————————————————
-# Monkey-patch ActiveStorage field so we never call signed_id
-# on a blob that hasn’t been persisted yet, and never emit the
-# built-in “cache” hidden field.
+# Monkey-patch ActiveStorage field so:
+# 1) we never call signed_id on a blob that hasn’t been persisted yet, and
+# 2) we never emit the built-in “cache” hidden field.
 # ——————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
   register_instance_option :resource_url do
     attached = bindings[:object].public_send(name)
     blob     = attached&.blob
-    return unless blob&.persisted?
+    view     = bindings[:view]
+
+    # only build a URL if we have a persisted blob *and* a request
+    next unless blob&.persisted? && view&.respond_to?(:request)
 
     Rails.application.routes.url_helpers.rails_blob_path(
       blob,
-      host: bindings[:view].request.base_url
+      host: view.request.base_url
     )
   end
 
-  # turn off the hidden cache field that was still calling signed_id
+  # turn off the hidden cache field entirely
   register_instance_option :cacheable? do
     false
   end
@@ -37,10 +40,10 @@ RailsAdmin.config do |config|
   config.authorize_with :cancancan
 
   # == UI ==
-  config.main_app_name           = ['Kiosk Screensaver', 'Admin']
-  config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
-  config.navigation_static_label = 'Account'
-  config.navigation_static_links = { 'Sign out' => '/sign_out' }
+  config.main_app_name             = ['Kiosk Screensaver', 'Admin']
+  config.included_models           = %w[KioskGroup Kiosk Slide Permission UserPermission]
+  config.navigation_static_label   = 'Account'
+  config.navigation_static_links   = { 'Sign out' => '/sign_out' }
 
   # == Actions ==
   config.actions do
@@ -91,9 +94,9 @@ RailsAdmin.config do |config|
 
   # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label    'Content'
-    weight              1
-    label_plural        'Kiosks'
+    navigation_label 'Content'
+    weight           1
+    label_plural     'Kiosks'
     object_label_method :slug
 
     list do
@@ -124,8 +127,8 @@ RailsAdmin.config do |config|
 
     list do
       field :image do
-        label    'Preview'
-        sortable false
+        label     'Preview'
+        sortable  false
         pretty_value do
           slide = bindings[:object]
           if slide.image.attached?
@@ -143,19 +146,19 @@ RailsAdmin.config do |config|
 
       %i[title display_seconds start_date end_date].each { |f| field f }
       field :kiosks do
-        label    'Assigned Kiosks'
-        sortable false
+        label     'Assigned Kiosks'
+        sortable  false
       end
     end
 
     edit do
       field :title do
         required false
-        help "If you leave this blank I'll auto-fill it from the filename."
+        help     "If you leave this blank I'll auto-fill it from the filename."
       end
       field :display_seconds do
         required false
-        help "If you leave this blank I'll default it to 10 seconds."
+        help     "If you leave this blank I'll default it to 10 seconds."
       end
       field :start_date
       field :end_date
