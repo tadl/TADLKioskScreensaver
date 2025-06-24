@@ -1,16 +1,16 @@
 # config/initializers/rails_admin_force_html.rb
 
 Rails.application.config.to_prepare do
-  require 'rails_admin/application_controller'
+  if defined?(RailsAdmin::MainController)
+    RailsAdmin::MainController.class_eval do
+      before_action :force_html_for_rails_admin
 
-  RailsAdmin::ApplicationController.class_eval do
-    # run *before* any action—wipe out any Turbo or other formats
-    prepend_before_action :force_html_request_format
+      private
 
-    private
-
-    def force_html_request_format
-      request.formats = [:html]
+      def force_html_for_rails_admin
+        # Treat any Turbo-Stream request as plain HTML so RailsAdmin never returns 406
+        request.format = :html if request.format == Mime[:turbo_stream]
+      end
     end
   end
 end
