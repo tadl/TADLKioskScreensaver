@@ -85,18 +85,18 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      # Only valid‐dimension slides appear in the multi‐select
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
-        help 'Only slides at exactly 1920×1080 show up here.'
+        help 'Only slides at exactly 1920×1080 are available here.'
 
         associated_collection_scope do
           Proc.new do |scope|
             scope
               .joins(image_attachment: :blob)
               .where(
-                "active_storage_blobs.metadata->>'width'  = '1920' AND " \
-                "active_storage_blobs.metadata->>'height' = '1080'"
+                # cast metadata (text) to json, then extract width/height
+                "(active_storage_blobs.metadata::json->>'width') = '1920' AND " \
+                "(active_storage_blobs.metadata::json->>'height') = '1080'"
               )
           end
         end
@@ -122,7 +122,7 @@ RailsAdmin.config do |config|
     object_label_method :rails_admin_label
 
     list do
-      # highlight invalid dims in red (optional)
+      # highlight invalid dimensions in red
       row_css_class do
         md = bindings[:object].image_metadata
         'error' if md['width'] != 1920 || md['height'] != 1080
