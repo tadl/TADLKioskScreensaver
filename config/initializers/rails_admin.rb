@@ -1,36 +1,16 @@
 # config/initializers/rails_admin.rb
 
-# ——————————————————————————————————————————————————————————————
-# Monkey-patch ActiveStorage field so we only call signed_id
-# on blobs that have actually been saved.
-# ——————————————————————————————————————————————————————————————
-module RailsAdmin
-  module Config
-    module Fields
-      module Types
-        class ActiveStorage < RailsAdmin::Config::Fields::Types::FileUpload
-          RailsAdmin::Config::Fields::Types.register(self)
-
-          # override default cache_value to skip new blobs
-          register_instance_option :cache_value do
-            attached = bindings[:object].public_send(name)
-            blob     = attached&.blob
-            blob&.persisted? ? blob.signed_id : nil
-          end
-        end
-      end
-    end
-  end
-end
-
 RailsAdmin.config do |config|
-  config.asset_source      = :importmap
+  config.asset_source = :importmap
+  # subclass your ApplicationController so you get its helpers
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
   config.authenticate_with do
     redirect_to main_app.sign_in_path unless user_signed_in?
   end
+
+  # current_user comes from your ApplicationController#current_user
   config.current_user_method(&:current_user)
 
   # == Authorization ==
@@ -69,6 +49,7 @@ RailsAdmin.config do |config|
     visible do
       bindings[:controller].current_ability.can?(:manage, UserPermission)
     end
+
     list do
       field :user
       field :permission
@@ -89,23 +70,29 @@ RailsAdmin.config do |config|
 
     edit do
       field :name do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
       field :slug do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
       field :kiosks do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
     end
   end
 
   # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label        'Content'
-    weight                  1
-    label_plural            'Kiosks'
-    object_label_method     :slug
+    navigation_label 'Content'
+    weight          1
+    label_plural    'Kiosks'
+    object_label_method :slug
 
     list do
       field :name
@@ -116,42 +103,53 @@ RailsAdmin.config do |config|
 
     edit do
       field :slides do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
       end
       field :name do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
       end
       field :slug do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
       end
       field :catalog_url do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
       end
       field :kiosk_group do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
     end
   end
 
   # == Slide ==
   config.model 'Slide' do
-    navigation_label    'Content'
-    weight              2
-    label_plural        'Slides'
+    navigation_label 'Content'
+    weight          2
+    label_plural    'Slides'
     object_label_method :rails_admin_label
 
     list do
-      field :image do
+      field :image, :active_storage do
         label    'Preview'
         sortable false
-        pretty_value do
+
+        formatted_value do
           slide = bindings[:object]
           if slide.image.attached?
             thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
             url   = Rails.application.routes.url_helpers.rails_representation_url(
-              thumb,
-              host: bindings[:view].request.base_url
-            )
+                      thumb,
+                      host: bindings[:view].request.base_url
+                    )
             bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
             '-'
@@ -171,16 +169,14 @@ RailsAdmin.config do |config|
 
     edit do
       field :title
+      field :image, :active_storage
       field :display_seconds
       field :start_date
       field :end_date
-
-      field :image, :active_storage do
-        label 'Slide image'
-      end
-
       field :kiosks do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
       end
     end
   end
