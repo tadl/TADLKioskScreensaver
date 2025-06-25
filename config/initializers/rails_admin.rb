@@ -153,7 +153,6 @@ RailsAdmin.config do |config|
       field :display_seconds do
         required false
         help "If you leave this blank I'll default it to 10 seconds."
-      end
       field :start_date
       field :end_date
 
