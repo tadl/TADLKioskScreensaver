@@ -25,12 +25,16 @@ RailsAdmin.config do |config|
   config.actions do
     dashboard
     index
-    new
+    new do
+      except ['UserPermission']
+    end
     export
     bulk_delete
     show
     edit
-    delete
+    delete do
+      except ['UserPermission']
+    end
   end
 
   # == Permission ==
@@ -42,6 +46,10 @@ RailsAdmin.config do |config|
 
   # == UserPermission ==
   config.model 'UserPermission' do
+    label           'User'         # singular name in the UI
+    label_plural    'Users'        # plural/nav label
+    object_label_method :rails_admin_label
+
     visible do
       bindings[:controller].current_ability.can?(:manage, UserPermission)
     end
@@ -50,6 +58,14 @@ RailsAdmin.config do |config|
       field :user
       field :permission
     end
+
+    edit do
+      field :user do
+        read_only true              # you can’t change the user here
+      end
+      field :permission
+    end
+
   end
 
   # == KioskGroup ==
