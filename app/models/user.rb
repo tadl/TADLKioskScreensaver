@@ -27,11 +27,24 @@ class User < ApplicationRecord
   has_many :kiosk_groups, through: :user_permissions
   has_many :permissions, through: :user_permissions
 
+  after_create :auto_provision_default_permission
+
   # admin? comes for free if you have a boolean `admin` column
   # but override can? so admins always have every ability:
   def can?(perm_name)
     return true if admin?
     permissions.exists?(name: perm_name.to_s)
   end
-end
 
+  private
+
+  def auto_provision_default_permission
+    # Look up whatever “starter” role you want new users to have.
+    # You might seed your permissions table with a name like 'staff' or 'guest'.
+    default = Permission.find_by(name: 'staff') 
+    return unless default
+
+    # Create the join record; they start with zero kiosk_groups.
+    user_permissions.create(permission: default)
+  end
+end

@@ -15,6 +15,7 @@
     when 'manage_kioskgroups' then 'Can create/edit/delete kiosk groups'
     when 'manage_slides'     then 'Can upload and manage slides'
     when 'manage_users'      then 'Can invite, edit and remove users'
+    when 'staff'             then 'Just a basic permission when initializing new users'
     end
   end
 end

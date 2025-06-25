@@ -17,23 +17,24 @@ RailsAdmin.config do |config|
   config.main_app_name           = ['Kiosk Screensaver', 'Admin']
   config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
   config.navigation_static_label = 'Account'
-  config.navigation_static_links = {
-    'Sign out' => '/sign_out'
-  }
+  config.navigation_static_links  = { 'Sign out' => '/sign_out' }
 
   # == Actions ==
   config.actions do
     dashboard
     index
+
     new do
       except ['UserPermission']
     end
+
     export
     bulk_delete
     show
     edit
+
     delete do
-      except ['UserPermission']
+      except ['UserPermission', 'Kiosk', 'KioskGroup']
     end
   end
 
@@ -45,11 +46,11 @@ RailsAdmin.config do |config|
     end
   end
 
-  # == UserPermission ==
+  # == UserPermission (aka Users) ==
   config.model 'UserPermission' do
     navigation_label 'Admin'
-    label           'User'         # singular name in the UI
-    label_plural    'Users'        # plural/nav label
+    label               'User'
+    label_plural        'Users'
     object_label_method :rails_admin_label
 
     visible do
@@ -66,9 +67,9 @@ RailsAdmin.config do |config|
       end
     end
 
-    edit do
+    create do
       field :user do
-        read_only true              # you can’t change the user here
+        help 'Pick the Google-OAuth user to grant a role to.'
       end
       field :permission
       field :kiosk_groups do
@@ -76,13 +77,27 @@ RailsAdmin.config do |config|
       end
     end
 
+    edit do
+      field :user do
+        read_only true
+        help 'Users are managed via Google OAuth; you cannot change this here.'
+      end
+      field :permission
+      field :kiosk_groups do
+        help 'Select which kiosk groups this user may manage.'
+      end
+    end
   end
 
   # == KioskGroup ==
   config.model 'KioskGroup' do
     navigation_label 'Content'
-    weight          0
-    label_plural    'Kiosk Groups'
+    weight           0
+    label_plural     'Kiosk Groups'
+
+    visible do
+      bindings[:controller].current_user.admin?
+    end
 
     list do
       field :name
@@ -93,7 +108,7 @@ RailsAdmin.config do |config|
     edit do
       %i[name slug kiosks].each do |f|
         field f do
-          read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+          read_only true
         end
       end
     end
@@ -101,9 +116,9 @@ RailsAdmin.config do |config|
 
   # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label 'Content'
-    weight           1
-    label_plural     'Kiosks'
+    navigation_label    'Content'
+    weight              1
+    label_plural        'Kiosks'
     object_label_method :slug
 
     list do
@@ -111,31 +126,25 @@ RailsAdmin.config do |config|
     end
 
     edit do
+      # Only slides picker for non-admins
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
         help 'Only slides at exactly 1920×1080 are available here.'
-
         associated_collection_scope do
           Proc.new do |scope|
             scope
               .joins(image_attachment: :blob)
-              .where(
-                # cast metadata (text) to json, then extract width/height
-                "(active_storage_blobs.metadata::json->>'width') = '1920' AND " \
-                "(active_storage_blobs.metadata::json->>'height') = '1080'"
-              )
+              .where("(active_storage_blobs.metadata::json->>'width')  = '1920'")
+              .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
           end
         end
       end
 
-      %i[name slug catalog_url].each do |f|
+      # Hide all other fields
+      %i[name slug catalog_url kiosk_group].each do |f|
         field f do
-          read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+          visible false
         end
-      end
-
-      field :kiosk_group do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
       end
     end
   end
@@ -148,7 +157,6 @@ RailsAdmin.config do |config|
     object_label_method :rails_admin_label
 
     list do
-      # highlight invalid dimensions in red
       row_css_class do
         md = bindings[:object].image_metadata
         'error' if md['width'] != 1920 || md['height'] != 1080
@@ -161,9 +169,10 @@ RailsAdmin.config do |config|
           slide = bindings[:object]
           if slide.image.attached?
             thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url   = Rails.application.routes.url_helpers.
-                      rails_representation_url(thumb,
-                        host: bindings[:view].request.base_url)
+            url   = Rails.application.routes.url_helpers.rails_representation_url(
+                     thumb,
+                     host: bindings[:view].request.base_url
+                   )
             bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
             '-'
@@ -181,13 +190,10 @@ RailsAdmin.config do |config|
         pretty_value do
           md = bindings[:object].image_metadata
           w, h = md['width'], md['height']
-          dim  = "#{w || '?'}×#{h || '?'}"
-
-          if w == 1920 && h == 1080
-            %(#{dim} <span class="text-success">✓</span>).html_safe
-          else
-            %(#{dim} <span class="text-danger font-weight-bold">✕</span>).html_safe
-          end
+          "#{w || '?'}×#{h || '?'} " +
+            (w == 1920 && h == 1080 ?
+              '<span class="text-success">✓</span>' :
+              '<span class="text-danger font-weight-bold">✕</span>')
         end
       end
 
@@ -195,23 +201,21 @@ RailsAdmin.config do |config|
         label    'Assigned Kiosks'
         sortable false
       end
+
     end
 
     create do
       field :title do
         required false
-        help "Leave blank to auto‐fill from filename."
+        help 'Leave blank to auto-fill from filename.'
       end
-
       field :image, :active_storage do
-        help "Upload a 1920×1080px image."
+        help 'Upload a 1920×1080px image.'
       end
-
       field :display_seconds do
         required false
-        help "Leave blank to default to 10 seconds."
+        help 'Leave blank to default to 10 seconds.'
       end
-
       field :start_date
       field :end_date
     end
@@ -219,27 +223,41 @@ RailsAdmin.config do |config|
     update do
       field :title do
         required false
-        help "Leave blank to auto‐fill from filename."
+        help 'Leave blank to auto-fill from filename.'
       end
-
       field :image, :active_storage do
-        help "Upload a 1920×1080px image."
+        help 'Upload a 1920×1080px image.'
       end
-
       field :display_seconds do
         required false
-        help "Leave blank to default to 10 seconds."
+        help 'Leave blank to default to 10 seconds.'
       end
-
       field :start_date
       field :end_date
 
       field :kiosks do
-        visible { bindings[:object].valid_dimensions? }
-
+        # only show kiosk-assignment if slide is 1920×1080
+        visible do
+          md = bindings[:object].image_metadata
+          md['width'] == 1920 && md['height'] == 1080
+        end
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
         help 'You can only assign a kiosk to a 1920×1080 slide.'
+
+        associated_collection_scope do
+          # use closure to capture bindings
+          current_user = bindings[:controller].current_user
+          Proc.new do |scope|
+            if current_user.admin?
+              scope
+            else
+              scope.where(kiosk_group_id: current_user.kiosk_group_ids)
+            end
+          end
+        end
       end
     end
+
   end
 end
+

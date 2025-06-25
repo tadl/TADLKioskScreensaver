@@ -8,6 +8,6 @@ class UserPermission < ApplicationRecord
   validates :permission_id, uniqueness: { scope: :user_id }
 
   def rails_admin_label
-    user.name
+    user.email.split('@').first
   end
 end
