@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "mini_magick"
-
 class Slide < ApplicationRecord
   has_and_belongs_to_many :kiosks
   has_one_attached :image

@@ -24,7 +24,7 @@ Rails.application.configure do
   config.public_file_server.enabled = ENV["RAILS_SERVE_STATIC_FILES"].present?
 
   # Force SSL
-#  config.force_ssl = true
+  config.force_ssl = true
 
   # -------------------------------------------------------------------
   # Assets
