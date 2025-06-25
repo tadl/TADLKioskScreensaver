@@ -39,6 +39,7 @@ RailsAdmin.config do |config|
 
   # == Permission ==
   config.model 'Permission' do
+    navigation_label 'Admin'
     visible do
       bindings[:controller].current_ability.can?(:manage, Permission)
     end
@@ -46,6 +47,7 @@ RailsAdmin.config do |config|
 
   # == UserPermission ==
   config.model 'UserPermission' do
+    navigation_label 'Admin'
     label           'User'         # singular name in the UI
     label_plural    'Users'        # plural/nav label
     object_label_method :rails_admin_label
