@@ -1,47 +1,32 @@
 # config/initializers/rails_admin.rb
 
 # ——————————————————————————————————————————————————————————————
-# Monkey‐patch ActiveStorage field so we never call signed_id
-# on a blob that hasn’t hit the database yet, and we only
-# try to preview persisted blobs.
+# Monkey-patch ActiveStorage field so:
+# 1) we never call signed_id on a blob that hasn’t been persisted yet, and
+# 2) we never emit the built-in “cache” hidden field.
 # ——————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
-  # override the URL builder so it only fires when blob.persisted?
   register_instance_option :resource_url do
     attached = bindings[:object].public_send(name)
     blob     = attached&.blob
-    if blob&.persisted?
-      Rails.application.routes.url_helpers.rails_blob_path(
-        blob,
-        host: bindings[:view].request.base_url
-      )
-    end
+    view     = bindings[:view]
+
+    # only build a URL if we have a persisted blob *and* a request
+    next unless blob&.persisted? && view&.respond_to?(:request)
+
+    Rails.application.routes.url_helpers.rails_blob_path(
+      blob,
+      host: view.request.base_url
+    )
   end
 
-  # only show a preview once the blob actually exists in the DB
-  register_instance_option :pretty_value do
-    blob = bindings[:object].public_send(name)&.blob
-    if blob&.persisted?
-      view = bindings[:view]
-      url = view.rails_blob_path(blob, host: view.request.base_url)
-      view.tag.img(src: url, style: 'max-width: 200px;')
-    end
-  end
-end
-
-# Monkey‐patch the generic FileUpload type too, so it never
-# tries to call image_tag(nil) and blow up.
-RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
-  register_instance_option :pretty_value do
-    url = resource_url
-    if url.present?
-      bindings[:view].tag.img(src: url, style: 'max-width: 200px;')
-    end
+  # turn off the hidden cache field entirely
+  register_instance_option :cacheable? do
+    false
   end
 end
 
 RailsAdmin.config do |config|
-  config.asset_source      = :importmap
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
@@ -54,12 +39,10 @@ RailsAdmin.config do |config|
   config.authorize_with :cancancan
 
   # == UI ==
-  config.main_app_name           = ['Kiosk Screensaver', 'Admin']
-  config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
-  config.navigation_static_label = 'Account'
-  config.navigation_static_links = {
-    'Sign out' => '/sign_out'
-  }
+  config.main_app_name             = ['Kiosk Screensaver', 'Admin']
+  config.included_models           = %w[KioskGroup Kiosk Slide Permission UserPermission]
+  config.navigation_static_label   = 'Account'
+  config.navigation_static_links   = { 'Sign out' => '/sign_out' }
 
   # == Actions ==
   config.actions do
@@ -143,8 +126,8 @@ RailsAdmin.config do |config|
 
     list do
       field :image do
-        label    'Preview'
-        sortable false
+        label     'Preview'
+        sortable  false
         pretty_value do
           slide = bindings[:object]
           if slide.image.attached?
@@ -162,19 +145,19 @@ RailsAdmin.config do |config|
 
       %i[title display_seconds start_date end_date].each { |f| field f }
       field :kiosks do
-        label    'Assigned Kiosks'
-        sortable false
+        label     'Assigned Kiosks'
+        sortable  false
       end
     end
 
     edit do
       field :title do
         required false
-        help "If you leave this blank I'll auto-fill it from the filename."
+        help     "If you leave this blank I'll auto-fill it from the filename."
       end
       field :display_seconds do
         required false
-        help "If you leave this blank I'll default it to 10 seconds."
+        help     "If you leave this blank I'll default it to 10 seconds."
       end
       field :start_date
       field :end_date
