@@ -6,12 +6,12 @@ class Slide < ApplicationRecord
   has_and_belongs_to_many :kiosks
   has_one_attached :image
 
-  # Auto-set title from filename if blank
+  # Auto-set title and duration defaults before validation
   before_validation :set_default_title
+  before_validation :set_default_display_seconds
 
   validates :title, presence: true
   validates :display_seconds,
-            presence: true,
             numericality: { only_integer: true, greater_than: 0 }
 
   validate :start_date_before_end_date
@@ -34,15 +34,21 @@ class Slide < ApplicationRecord
 
   private
 
+  # If the user left title blank, use the image filename (without extension)
   def set_default_title
     return if title.present? || !image.attached?
     self.title = image.filename.base
   end
 
-  def start_date_before_end_date
-    return if start_date.blank? || end_date.blank?
-    errors.add(:end_date, "must be on or after the start date") if end_date < start_date
+  # If display_seconds wasn't provided, default to 10
+  def set_default_display_seconds
+    self.display_seconds = 10 if display_seconds.blank?
   end
 
+  def start_date_before_end_date
+    return if start_date.blank? || end_date.blank?
+    if end_date < start_date
+      errors.add(:end_date, "must be on or after the start date")
+    end
+  end
 end
-
