@@ -75,9 +75,9 @@ RailsAdmin.config do |config|
 
   # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label    'Content'
-    weight              1
-    label_plural        'Kiosks'
+    navigation_label 'Content'
+    weight           1
+    label_plural     'Kiosks'
     object_label_method :slug
 
     list do
@@ -85,19 +85,18 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      # Only 1920×1080 slides available for assignment
+      # Only valid‐dimension slides appear in the multi‐select
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
-        help 'Only slides at exactly 1920×1080 are available here.'
+        help 'Only slides at exactly 1920×1080 show up here.'
 
         associated_collection_scope do
           Proc.new do |scope|
             scope
               .joins(image_attachment: :blob)
               .where(
-                "active_storage_blobs.metadata->>'width'  = ? AND " \
-                "active_storage_blobs.metadata->>'height' = ?",
-                "1920", "1080"
+                "active_storage_blobs.metadata->>'width'  = '1920' AND " \
+                "active_storage_blobs.metadata->>'height' = '1080'"
               )
           end
         end
@@ -122,13 +121,11 @@ RailsAdmin.config do |config|
     label_plural     'Slides'
     object_label_method :rails_admin_label
 
-    # INDEX: preview, core fields, dimensions badge, and optional red-row for invalids
     list do
+      # highlight invalid dims in red (optional)
       row_css_class do
         md = bindings[:object].image_metadata
-        if md['width'] != 1920 || md['height'] != 1080
-          'error'
-        end
+        'error' if md['width'] != 1920 || md['height'] != 1080
       end
 
       field :image do
@@ -161,10 +158,8 @@ RailsAdmin.config do |config|
           dim  = "#{w || '?'}×#{h || '?'}"
 
           if w == 1920 && h == 1080
-            # green ✓
             %(#{dim} <span class="text-success">✓</span>).html_safe
           else
-            # red ✕
             %(#{dim} <span class="text-danger font-weight-bold">✕</span>).html_safe
           end
         end
@@ -176,11 +171,10 @@ RailsAdmin.config do |config|
       end
     end
 
-    # NEW FORM: no kiosks picker
     create do
       field :title do
         required false
-        help "Leave blank to auto‐fill from the filename."
+        help "Leave blank to auto‐fill from filename."
       end
 
       field :image, :active_storage do
@@ -196,11 +190,10 @@ RailsAdmin.config do |config|
       field :end_date
     end
 
-    # EDIT FORM: show kiosks picker again
     update do
       field :title do
         required false
-        help "Leave blank to auto‐fill from the filename."
+        help "Leave blank to auto‐fill from filename."
       end
 
       field :image, :active_storage do
