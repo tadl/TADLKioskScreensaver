@@ -25,6 +25,7 @@ Rails.application.configure do
 
   # Force SSL
   config.force_ssl = true
+  config.assume_ssl = true
 
   # -------------------------------------------------------------------
   # Assets
