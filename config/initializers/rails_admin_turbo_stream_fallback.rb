@@ -1,19 +1,17 @@
 # frozen_string_literal: true
 # config/initializers/rails_admin_turbo_stream_fallback.rb
 
-# If RailsAdmin ever gets a turbo_stream request it can’t handle,
-# convert it to HTML so the normal RailsAdmin views will render.
+# Monkey-patch RailsAdmin::MainController so that if RailsAdmin
+# ever raises UnknownFormat (e.g. a Turbo Stream request),
+# we force the request back to HTML and retry.
 Rails.application.config.to_prepare do
-  # make sure the controller is loaded
+  # Make sure the class is loaded before we patch
   require 'rails_admin/main_controller'
 
   RailsAdmin::MainController.class_eval do
-    # run before every action
-    prepend_before_action do
-      # in Rails 7 Turbo, request.format.symbol == :turbo_stream
-      if request.format.symbol == :turbo_stream
-        request.format = :html
-      end
+    rescue_from ActionController::UnknownFormat do
+      request.format = :html
+      retry
     end
   end
 end
