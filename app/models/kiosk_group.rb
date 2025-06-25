@@ -3,6 +3,8 @@
 class KioskGroup < ApplicationRecord
   has_many :kiosks
 
+  has_and_belongs_to_many :user_permissions
+
   validates :name, presence: true
   validates :slug,
             presence: true,

@@ -59,6 +59,11 @@ RailsAdmin.config do |config|
     list do
       field :user
       field :permission
+      field :kiosk_groups do
+        pretty_value do
+          bindings[:object].kiosk_groups.map(&:name).join(', ')
+        end
+      end
     end
 
     edit do
@@ -66,6 +71,9 @@ RailsAdmin.config do |config|
         read_only true              # you can’t change the user here
       end
       field :permission
+      field :kiosk_gruops do
+        help 'Select which kiosk groups this user may manage.'
+      end
     end
 
   end
