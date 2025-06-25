@@ -4,26 +4,22 @@ Rails.application.config.to_prepare do
   #
   # 1) Disable Turbo on all RailsAdmin forms
   #
-  begin
-    # make sure the RailsAdmin helper is loaded
-    require 'rails_admin/main_helper'
-
+  if defined?(RailsAdmin::MainHelper)
     RailsAdmin::MainHelper.module_eval do
-      # override their form helper so it never emits a turbo‐driven form
-      def rails_admin_form_for(object, *args, &block)
-        options = args.extract_options!
-        options[:html] ||= {}
-        # turn Turbo off for this form
-        options[:html]['data-turbo'] = false
-        super(object, *args, **options, &block)
-      end
+      prepend(Module.new do
+        # Force every rails_admin_form_for to render with data-turbo="false"
+        def rails_admin_form_for(record, *args, &block)
+          options = args.first.is_a?(Hash) ? args.shift.dup : {}
+          options[:html] ||= {}
+          options[:html]['data-turbo'] = false
+          super(record, options, *args, &block)
+        end
+      end)
     end
-  rescue LoadError
-    # if RailsAdmin::MainHelper isn't loaded yet, we'll try again on the next to_prepare
   end
 
   #
-  # 2) Only preview persisted ActiveStorage blobs in the list/show views
+  # 2) Only preview persisted ActiveStorage blobs
   #
   if defined?(RailsAdmin::Config::Fields::Types::ActiveStorage)
     RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
@@ -50,7 +46,7 @@ Rails.application.config.to_prepare do
   end
 
   #
-  # 3) Safe generic FileUpload preview (never call image_tag(nil))
+  # 3) Safe generic FileUpload preview
   #
   if defined?(RailsAdmin::Config::Fields::Types::FileUpload)
     RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
@@ -64,7 +60,7 @@ Rails.application.config.to_prepare do
 end
 
 #
-# 4) The normal RailsAdmin configuration
+# 4) Your normal RailsAdmin config
 #
 RailsAdmin.config do |config|
   config.asset_source      = :importmap
@@ -135,8 +131,8 @@ RailsAdmin.config do |config|
   # == Kiosk ==
   config.model 'Kiosk' do
     navigation_label 'Content'
-    weight           1
-    label_plural     'Kiosks'
+    weight          1
+    label_plural    'Kiosks'
     object_label_method :slug
 
     list do
@@ -173,8 +169,8 @@ RailsAdmin.config do |config|
           slide = bindings[:object]
           if slide.image.attached?
             thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url   = Rails.application.routes.
-                      rails_representation_url(thumb, host: bindings[:view].request.base_url)
+            url   = Rails.application.routes
+                         .rails_representation_url(thumb, host: bindings[:view].request.base_url)
             bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
             '-'
