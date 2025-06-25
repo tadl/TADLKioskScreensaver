@@ -2,7 +2,6 @@
 
 RailsAdmin.config do |config|
   config.asset_source      = :importmap
-  # subclass your ApplicationController so you get its helpers
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
@@ -101,12 +100,21 @@ RailsAdmin.config do |config|
 
   # == Slide ==
   config.model 'Slide' do
-    navigation_label    'Content'
-    weight              2
-    label_plural        'Slides'
+    navigation_label 'Content'
+    weight           2
+    label_plural     'Slides'
     object_label_method :rails_admin_label
 
+    # INDEX: show preview, metadata, and highlight invalid dimensions
     list do
+      # mark non-1920×1080 rows in red
+      row_css_class do
+        md = bindings[:object].image_metadata
+        if md['width'] != 1920 || md['height'] != 1080
+          'error'
+        end
+      end
+
       field :image do
         label    'Preview'
         sortable false
@@ -128,23 +136,55 @@ RailsAdmin.config do |config|
       field :display_seconds
       field :start_date
       field :end_date
+
+      field :image_metadata do
+        label 'Dimensions'
+        pretty_value do
+          md = bindings[:object].image_metadata
+          "#{md['width'] || '?'}×#{md['height'] || '?'}"
+        end
+      end
+
       field :kiosks do
         label    'Assigned Kiosks'
         sortable false
       end
     end
 
-    edit do
+    # NEW FORM: no kiosks picker
+    create do
       field :title do
         required false
-        help "If you leave this blank I'll auto-fill it from the filename."
+        help "Leave blank to auto-fill from filename."
       end
 
-      field :image, :active_storage
+      field :image, :active_storage do
+        help "Upload a 1920×1080px image."
+      end
 
       field :display_seconds do
         required false
-        help "If you leave this blank I'll default it to 10 seconds."
+        help "Leave blank to default to 10 seconds."
+      end
+
+      field :start_date
+      field :end_date
+    end
+
+    # EDIT FORM: include kiosks picker
+    update do
+      field :title do
+        required false
+        help "Leave blank to auto-fill from filename."
+      end
+
+      field :image, :active_storage do
+        help "Upload a 1920×1080px image."
+      end
+
+      field :display_seconds do
+        required false
+        help "Leave blank to default to 10 seconds."
       end
 
       field :start_date
