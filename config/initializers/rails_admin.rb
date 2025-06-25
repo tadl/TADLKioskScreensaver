@@ -105,9 +105,9 @@ RailsAdmin.config do |config|
     label_plural     'Slides'
     object_label_method :rails_admin_label
 
-    # INDEX: show preview, metadata, and highlight invalid dimensions
+    ## INDEX LIST
     list do
-      # mark non-1920×1080 rows in red
+      # optional: keep the red-row highlighting for errors
       row_css_class do
         md = bindings[:object].image_metadata
         if md['width'] != 1920 || md['height'] != 1080
@@ -137,11 +137,21 @@ RailsAdmin.config do |config|
       field :start_date
       field :end_date
 
+      # Big new! Dimensions with ✓ / ✕ badges
       field :image_metadata do
         label 'Dimensions'
         pretty_value do
           md = bindings[:object].image_metadata
-          "#{md['width'] || '?'}×#{md['height'] || '?'}"
+          w, h = md['width'], md['height']
+          dim  = "#{w || '?'}×#{h || '?'}"
+
+          if w == 1920 && h == 1080
+            # green check
+            %(#{dim} <span class="text-success">✓</span>).html_safe
+          else
+            # red cross, bold
+            %(#{dim} <span class="text-danger font-weight-bold">✕</span>).html_safe
+          end
         end
       end
 
@@ -151,7 +161,7 @@ RailsAdmin.config do |config|
       end
     end
 
-    # NEW FORM: no kiosks picker
+    ## NEW FORM (create) — no kiosks picker
     create do
       field :title do
         required false
@@ -171,7 +181,7 @@ RailsAdmin.config do |config|
       field :end_date
     end
 
-    # EDIT FORM: include kiosks picker
+    ## EDIT FORM (update) — include kiosks
     update do
       field :title do
         required false
