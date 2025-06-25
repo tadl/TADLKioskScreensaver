@@ -2,26 +2,22 @@
 
 # ——————————————————————————————————————————————————————————————
 # Monkey-patch ActiveStorage field so we never call signed_id
-# on a blob that hasn’t been persisted yet, and never emit the
-# built-in “cache” hidden field.
+# on a blob that hasn’t been persisted yet.
 # ——————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
-  # never try to sign a blob that isn’t saved yet
+  # only build a URL if the blob already exists in the DB
   register_instance_option :resource_url do
     attached = bindings[:object].public_send(name)
     blob     = attached&.blob
-
     if blob&.persisted?
       Rails.application.routes.url_helpers.rails_blob_path(
         blob,
         host: bindings[:view].request.base_url
       )
-    else
-      ""   # return empty string so image_tag("") won't blow up
     end
   end
 
-  # disable the hidden “cache” field entirely
+  # disable the hidden “cache” field (which tries to call signed_id on new blobs)
   register_instance_option :cacheable? do
     false
   end
@@ -44,7 +40,9 @@ RailsAdmin.config do |config|
   config.main_app_name           = ['Kiosk Screensaver', 'Admin']
   config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
   config.navigation_static_label = 'Account'
-  config.navigation_static_links = { 'Sign out' => '/sign_out' }
+  config.navigation_static_links = {
+    'Sign out' => '/sign_out'
+  }
 
   # == Actions ==
   config.actions do
@@ -157,10 +155,12 @@ RailsAdmin.config do |config|
         required false
         help "If you leave this blank I'll auto-fill it from the filename."
       end
+
       field :display_seconds do
         required false
         help "If you leave this blank I'll default it to 10 seconds."
       end
+
       field :start_date
       field :end_date
 
