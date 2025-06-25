@@ -40,6 +40,7 @@ RailsAdmin.config do |config|
   # == Permission ==
   config.model 'Permission' do
     visible do
+      # now bindings[:controller] will be available
       bindings[:controller].current_ability.can?(:manage, Permission)
     end
   end
@@ -70,13 +71,19 @@ RailsAdmin.config do |config|
 
     edit do
       field :name do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
       field :slug do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
       field :kiosks do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
     end
   end
@@ -97,19 +104,29 @@ RailsAdmin.config do |config|
 
     edit do
       field :slides do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
       end
       field :name do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
       end
       field :slug do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
       end
       field :catalog_url do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
       end
       field :kiosk_group do
-        read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
       end
     end
   end
@@ -152,35 +169,26 @@ RailsAdmin.config do |config|
 
     edit do
       field :title
-
-      # <-- Custom image field to avoid signed_id on new records -->
       field :image, :active_storage do
         cache_value do
-          obj = bindings[:object]
-          if obj.image.attached? && obj.image.blob.persisted?
-            obj.image.blob.signed_id
-          end
-        rescue
-          nil
-        end
-
-        resource_url do
-          obj = bindings[:object]
-          if obj.image.attached? && obj.image.blob.persisted?
-            bindings[:view].url_for(obj.image)
+          record = bindings[:object]
+          attach = record.send(name)
+          if record.persisted? && attach.attached?
+            attach.signed_id
           end
         rescue
           nil
         end
       end
-
       field :display_seconds
       field :start_date
       field :end_date
-
       field :kiosks do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
       end
     end
   end
 end
+
