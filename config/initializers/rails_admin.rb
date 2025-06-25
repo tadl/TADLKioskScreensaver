@@ -1,66 +1,7 @@
 # config/initializers/rails_admin.rb
 
-Rails.application.config.to_prepare do
-  #
-  # 1) Disable Turbo on RailsAdmin forms to prevent 406 errors on file uploads
-  #
-  if defined?(RailsAdmin::MainHelper)
-    RailsAdmin::MainHelper.prepend(Module.new do
-      # This wraps the original rails_admin_form_for and injects data-turbo="false"
-      def rails_admin_form_for(model, options = {}, &block)
-        options[:html] ||= {}
-        options[:html].merge!('data-turbo' => false)
-        super(model, options, &block)
-      end
-    end)
-  end
-
-  #
-  # 2) Monkey-patch ActiveStorage field so we only preview persisted blobs
-  #
-  if defined?(RailsAdmin::Config::Fields::Types::ActiveStorage)
-    RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
-      register_instance_option :resource_url do
-        attached = bindings[:object].public_send(name)
-        blob     = attached&.blob
-        if blob&.persisted?
-          Rails.application.routes.url_helpers.rails_blob_path(
-            blob,
-            host: bindings[:view].request.base_url
-          )
-        end
-      end
-
-      register_instance_option :pretty_value do
-        blob = bindings[:object].public_send(name)&.blob
-        if blob&.persisted?
-          view = bindings[:view]
-          url  = view.rails_blob_path(blob, host: view.request.base_url)
-          view.tag.img(src: url, style: 'max-width: 200px;')
-        end
-      end
-    end
-  end
-
-  #
-  # 3) Monkey-patch generic FileUpload so it doesn’t blow up on nil URLs
-  #
-  if defined?(RailsAdmin::Config::Fields::Types::FileUpload)
-    RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
-      register_instance_option :pretty_value do
-        url = resource_url
-        if url.present?
-          bindings[:view].tag.img(src: url, style: 'max-width: 200px;')
-        end
-      end
-    end
-  end
-end
-
-#
-# 4) Your normal RailsAdmin.config block, unchanged
-#
 RailsAdmin.config do |config|
+  # Serve your own application layout & assets
   config.asset_source      = :importmap
   config.parent_controller = '::ApplicationController'
 
@@ -77,7 +18,9 @@ RailsAdmin.config do |config|
   config.main_app_name           = ['Kiosk Screensaver', 'Admin']
   config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
   config.navigation_static_label = 'Account'
-  config.navigation_static_links = { 'Sign out' => '/sign_out' }
+  config.navigation_static_links = {
+    'Sign out' => '/sign_out'
+  }
 
   # == Actions ==
   config.actions do
@@ -110,11 +53,13 @@ RailsAdmin.config do |config|
     navigation_label 'Content'
     weight          0
     label_plural    'Kiosk Groups'
+
     list do
       field :name
       field :slug
       field :kiosks
     end
+
     edit do
       %i[name slug kiosks].each do |f|
         field f do
@@ -130,9 +75,11 @@ RailsAdmin.config do |config|
     weight           1
     label_plural     'Kiosks'
     object_label_method :slug
+
     list do
       %i[name slug catalog_url kiosk_group].each { |f| field f }
     end
+
     edit do
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
