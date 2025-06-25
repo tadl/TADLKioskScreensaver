@@ -6,18 +6,22 @@
 # built-in “cache” hidden field.
 # ——————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
+  # never try to sign a blob that isn’t saved yet
   register_instance_option :resource_url do
     attached = bindings[:object].public_send(name)
     blob     = attached&.blob
-    return unless blob&.persisted?
 
-    Rails.application.routes.url_helpers.rails_blob_path(
-      blob,
-      host: bindings[:view].request.base_url
-    )
+    if blob&.persisted?
+      Rails.application.routes.url_helpers.rails_blob_path(
+        blob,
+        host: bindings[:view].request.base_url
+      )
+    else
+      ""   # return empty string so image_tag("") won't blow up
+    end
   end
 
-  # turn off the hidden cache field that was still calling signed_id
+  # disable the hidden “cache” field entirely
   register_instance_option :cacheable? do
     false
   end
