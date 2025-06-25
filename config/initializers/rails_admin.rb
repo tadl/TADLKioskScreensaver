@@ -209,7 +209,10 @@ RailsAdmin.config do |config|
       field :end_date
 
       field :kiosks do
+        visible { bindings[:object].valid_dimensions? }
+
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        help 'You can only assign a kiosk to a 1920×1080 slide.'
       end
     end
   end
