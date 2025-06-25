@@ -14,8 +14,15 @@ class Slide < ApplicationRecord
             numericality: { only_integer: true, greater_than: 0 }
   validate  :start_date_before_end_date
 
-  # New: validate right on upload that the image is 1920×1080
-  validate  :validate_image_dimensions, if: -> { image.attached? }
+  # Helper to check whether the image is exactly 1920×1080,
+  # without raising a validation error on save
+  def valid_dimensions?
+    analyze_image_once!
+    md = image.metadata
+    md["width"] == 1920 && md["height"] == 1080
+  rescue ActiveStorage::FileNotFoundError
+    false
+  end
 
   # Used by RailsAdmin to label slide objects
   def rails_admin_label
@@ -65,25 +72,5 @@ class Slide < ApplicationRecord
   def analyze_image_once!
     return if image.analyzed?
     image.analyze
-  end
-
-  # Ensure (when possible) the upload is exactly 1920×1080px
-  def validate_image_dimensions
-    begin
-      analyze_image_once!
-    rescue ActiveStorage::FileNotFoundError
-      # image hasn't yet hit disk; we'll skip for now and re-validate on next save
-      return
-    end
-
-    w =        image.metadata["width"]
-    h =        image.metadata["height"]
-
-    unless w == 1920 && h == 1080
-      errors.add(
-        :image,
-        "must be exactly 1920×1080px (we got #{w || 'unknown'}×#{h || 'unknown'})"
-      )
-    end
   end
 end

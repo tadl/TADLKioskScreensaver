@@ -45,6 +45,7 @@ RailsAdmin.config do |config|
     visible do
       bindings[:controller].current_ability.can?(:manage, UserPermission)
     end
+
     list do
       field :user
       field :permission
@@ -84,14 +85,30 @@ RailsAdmin.config do |config|
     end
 
     edit do
+      # Only 1920×1080 slides available for assignment
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        help 'Only slides at exactly 1920×1080 are available here.'
+
+        associated_collection_scope do
+          Proc.new do |scope|
+            scope
+              .joins(image_attachment: :blob)
+              .where(
+                "active_storage_blobs.metadata->>'width'  = ? AND " \
+                "active_storage_blobs.metadata->>'height' = ?",
+                "1920", "1080"
+              )
+          end
+        end
       end
+
       %i[name slug catalog_url].each do |f|
         field f do
           read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
         end
       end
+
       field :kiosk_group do
         read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
       end
@@ -105,9 +122,8 @@ RailsAdmin.config do |config|
     label_plural     'Slides'
     object_label_method :rails_admin_label
 
-    ## INDEX LIST
+    # INDEX: preview, core fields, dimensions badge, and optional red-row for invalids
     list do
-      # optional: keep the red-row highlighting for errors
       row_css_class do
         md = bindings[:object].image_metadata
         if md['width'] != 1920 || md['height'] != 1080
@@ -122,9 +138,9 @@ RailsAdmin.config do |config|
           slide = bindings[:object]
           if slide.image.attached?
             thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url   = Rails.application.routes.url_helpers.rails_representation_url(
-              thumb, host: bindings[:view].request.base_url
-            )
+            url   = Rails.application.routes.url_helpers.
+                      rails_representation_url(thumb,
+                        host: bindings[:view].request.base_url)
             bindings[:view].tag.img(src: url, width: 100, height: 100)
           else
             '-'
@@ -137,7 +153,6 @@ RailsAdmin.config do |config|
       field :start_date
       field :end_date
 
-      # Big new! Dimensions with ✓ / ✕ badges
       field :image_metadata do
         label 'Dimensions'
         pretty_value do
@@ -146,10 +161,10 @@ RailsAdmin.config do |config|
           dim  = "#{w || '?'}×#{h || '?'}"
 
           if w == 1920 && h == 1080
-            # green check
+            # green ✓
             %(#{dim} <span class="text-success">✓</span>).html_safe
           else
-            # red cross, bold
+            # red ✕
             %(#{dim} <span class="text-danger font-weight-bold">✕</span>).html_safe
           end
         end
@@ -161,11 +176,11 @@ RailsAdmin.config do |config|
       end
     end
 
-    ## NEW FORM (create) — no kiosks picker
+    # NEW FORM: no kiosks picker
     create do
       field :title do
         required false
-        help "Leave blank to auto-fill from filename."
+        help "Leave blank to auto‐fill from the filename."
       end
 
       field :image, :active_storage do
@@ -181,11 +196,11 @@ RailsAdmin.config do |config|
       field :end_date
     end
 
-    ## EDIT FORM (update) — include kiosks
+    # EDIT FORM: show kiosks picker again
     update do
       field :title do
         required false
-        help "Leave blank to auto-fill from filename."
+        help "Leave blank to auto‐fill from the filename."
       end
 
       field :image, :active_storage do
