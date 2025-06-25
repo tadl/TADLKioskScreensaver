@@ -1,8 +1,8 @@
 # config/initializers/rails_admin.rb
 
 RailsAdmin.config do |config|
-  config.asset_source = :importmap
-  config.parent_controller = '::ApplicationController'
+  config.asset_source       = :importmap
+  config.parent_controller  = '::ApplicationController'
 
   # == Authentication ==
   config.authenticate_with do
@@ -15,9 +15,12 @@ RailsAdmin.config do |config|
 
   # == UI ==
   config.main_app_name   = ['Kiosk Screensaver', 'Admin']
-  config.navigation_static_label = 'Account'
-  config.navigation_static_links = { 'Sign out' => '/sign_out' }
   config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
+
+  config.navigation_static_label = 'Account'
+  config.navigation_static_links = {
+    'Sign out' => '/sign_out'
+  }
 
   # == Actions ==
   config.actions do
@@ -33,12 +36,16 @@ RailsAdmin.config do |config|
 
   # == Permission ==
   config.model 'Permission' do
-    visible { bindings[:controller].current_ability.can?(:manage, Permission) }
+    visible do
+      bindings[:controller].current_ability.can?(:manage, Permission)
+    end
   end
 
   # == UserPermission ==
   config.model 'UserPermission' do
-    visible { bindings[:controller].current_ability.can?(:manage, UserPermission) }
+    visible do
+      bindings[:controller].current_ability.can?(:manage, UserPermission)
+    end
     list do
       field :user
       field :permission
@@ -58,9 +65,19 @@ RailsAdmin.config do |config|
     end
 
     edit do
-      %i[name slug kiosks].each do |f|
-        field(f) do
-          read_only { !bindings[:controller].current_ability.can?(:manage, KioskGroup) }
+      field :name do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
+      field :slug do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
+        end
+      end
+      field :kiosks do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
         end
       end
     end
@@ -82,11 +99,28 @@ RailsAdmin.config do |config|
 
     edit do
       field :slides do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
       end
-      %i[name slug catalog_url kiosk_group].each do |f|
-        field(f) do
-          read_only { !bindings[:controller].current_ability.can?(:manage, Kiosk) }
+      field :name do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :slug do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :catalog_url do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Kiosk)
+        end
+      end
+      field :kiosk_group do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, KioskGroup)
         end
       end
     end
@@ -100,24 +134,8 @@ RailsAdmin.config do |config|
     object_label_method :rails_admin_label
 
     list do
-      field :image, :active_storage do
-        label    'Preview'
-        sortable false
-        pretty_value do
-          slide = bindings[:object]
-          if slide.image.attached?
-            thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url   = Rails.application.routes.url_helpers.rails_representation_url(
-                      thumb,
-                      host: bindings[:view].request.base_url
-                    )
-            bindings[:view].tag.img(src: url, width: 100, height: 100)
-          else
-            '-'
-          end
-        end
-      end
-
+      # just show the attachment-link
+      field :image, :active_storage
       field :title
       field :display_seconds
       field :start_date
@@ -131,19 +149,18 @@ RailsAdmin.config do |config|
     edit do
       field :title
 
-      # Use the ActiveStorage picker but disable cache/delete bits
+      # use the built-in ActiveStorage uploader, but turn off cache on new records
       field :image, :active_storage do
-        cache_method  nil
-        cache_value   nil
-        delete_method nil
+        cache_method false
       end
 
       field :display_seconds
       field :start_date
       field :end_date
-
       field :kiosks do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, Slide)
+        end
       end
     end
   end
