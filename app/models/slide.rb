@@ -31,11 +31,15 @@ class Slide < ApplicationRecord
     rails_admin_label
   end
 
-  # Return a slice of the image metadata once analyzed
+  # Return a slice of the image metadata once analyzed (if available)
   def image_metadata
-    # force synchronous analysis (you have the image_processing gem)
-    image.analyze unless image.analyzed?
-    image.metadata.slice("width", "height", "content_type", "identified", "analyzed")
+    # only try to analyze if the file is accessible
+    begin
+      image.analyze unless image.analyzed?
+    rescue ActiveStorage::FileNotFoundError
+      return {}
+    end
+    image.metadata.slice("width", "height", "content_type")
   end
 
   private
@@ -58,13 +62,23 @@ class Slide < ApplicationRecord
     end
   end
 
-  # Ensure the upload is exactly 1920×1080px
+  # Ensure (when possible) the upload is exactly 1920×1080px
   def validate_image_dimensions
-    image.analyze unless image.analyzed?
+    # Try to kick off synchronous analysis; if file not yet on disk, bail out
+    begin
+      image.analyze unless image.analyzed?
+    rescue ActiveStorage::FileNotFoundError
+      return
+    end
+
     w = image.metadata["width"]
     h = image.metadata["height"]
-    if w != 1920 || h != 1080
-      errors.add(:image, "must be exactly 1920×1080 (got #{w}×#{h})")
+
+    unless w == 1920 && h == 1080
+      errors.add(
+        :image,
+        "must be exactly 1920×1080px (we got #{w || 'unknown'}×#{h || 'unknown'})"
+      )
     end
   end
 end
