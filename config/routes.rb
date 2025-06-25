@@ -4,7 +4,7 @@ Rails.application.routes.draw do
   match  '/sign_out', to: 'sessions#destroy', as: :sign_out, via: [:get, :delete]
   get '/auth/:provider/callback', to: 'sessions#create'
 
-  mount RailsAdmin::Engine => '/admin', as: 'rails_admin', defaults: { format: :html }
+  mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
   root to: "screensaver#index"
 
   resources :slides, except: [:show]
