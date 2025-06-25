@@ -2,20 +2,19 @@
 
 Rails.application.config.to_prepare do
   #
-  # 1) Disable Turbo on all RailsAdmin forms
+  # 1) Disable Turbo/AJAX on all RailsAdmin forms
   #
-  if defined?(RailsAdmin::MainHelper)
+  begin
     RailsAdmin::MainHelper.module_eval do
-      prepend(Module.new do
-        # Force every rails_admin_form_for to render with data-turbo="false"
-        def rails_admin_form_for(record, *args, &block)
-          options = args.first.is_a?(Hash) ? args.shift.dup : {}
-          options[:html] ||= {}
-          options[:html]['data-turbo'] = false
-          super(record, options, *args, &block)
-        end
-      end)
+      def rails_admin_form_for(object, **options, &block)
+        options[:local] ||= true
+        options[:html]    ||= {}
+        options[:html]['data-turbo'] = false
+        super(object, **options, &block)
+      end
     end
+  rescue NameError
+    # RailsAdmin::MainHelper not loaded yet—will retry on next to_prepare
   end
 
   #
@@ -27,10 +26,8 @@ Rails.application.config.to_prepare do
         attached = bindings[:object].public_send(name)
         blob     = attached&.blob
         if blob&.persisted?
-          Rails.application.routes.url_helpers.rails_blob_path(
-            blob,
-            host: bindings[:view].request.base_url
-          )
+          Rails.application.routes.url_helpers
+               .rails_blob_path(blob, host: bindings[:view].request.base_url)
         end
       end
 
@@ -60,7 +57,7 @@ Rails.application.config.to_prepare do
 end
 
 #
-# 4) Your normal RailsAdmin config
+# 4) The regular RailsAdmin config
 #
 RailsAdmin.config do |config|
   config.asset_source      = :importmap
@@ -112,13 +109,11 @@ RailsAdmin.config do |config|
     navigation_label 'Content'
     weight          0
     label_plural    'Kiosk Groups'
-
     list do
       field :name
       field :slug
       field :kiosks
     end
-
     edit do
       %i[name slug kiosks].each do |f|
         field f do
@@ -131,14 +126,12 @@ RailsAdmin.config do |config|
   # == Kiosk ==
   config.model 'Kiosk' do
     navigation_label 'Content'
-    weight          1
-    label_plural    'Kiosks'
+    weight           1
+    label_plural     'Kiosks'
     object_label_method :slug
-
     list do
       %i[name slug catalog_url kiosk_group].each { |f| field f }
     end
-
     edit do
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
