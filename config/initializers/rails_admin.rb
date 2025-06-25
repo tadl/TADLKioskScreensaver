@@ -1,72 +1,58 @@
 # config/initializers/rails_admin.rb
 
-Rails.application.config.to_prepare do
-  # ————————————————————————————————————————————————————————————————
-  # 1) Force all RailsAdmin controllers to respond as HTML (no more 406s)
-  # ————————————————————————————————————————————————————————————————
-  begin
-    require 'rails_admin/application_controller'
-  rescue LoadError
-    # in case the gem’s autoload paths aren’t yet set; to_prepare will fire again
+# ————————————————————————————————————————————————————————————————
+# 1) Disable Turbo-Stream format for **all** RailsAdmin controllers,
+#    so create/update won’t return 406 Not Acceptable.
+# ————————————————————————————————————————————————————————————————
+RailsAdmin::ApplicationController.class_eval do
+  before_action :force_html_format_for_rails_admin
+
+  private
+
+  def force_html_format_for_rails_admin
+    # if Turbo-Stream requested, treat it as plain HTML
+    request.format = :html if request.format.turbo_stream?
   end
+end
 
-  if defined?(RailsAdmin::ApplicationController)
-    RailsAdmin::ApplicationController.class_eval do
-      before_action :force_html_format_for_rails_admin
-
-      private
-
-      def force_html_format_for_rails_admin
-        # if the client asked for Turbo Stream, treat it as HTML instead
-        request.format = :html if request.format == Mime[:turbo_stream]
-      end
+# ————————————————————————————————————————————————————————————————
+# 2) Monkey-patch ActiveStorage fields so we never call signed_id
+#    on blobs that haven’t been persisted yet, and only preview persisted blobs.
+# ————————————————————————————————————————————————————————————————
+RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
+  register_instance_option :resource_url do
+    attached = bindings[:object].public_send(name)
+    blob     = attached&.blob
+    if blob&.persisted?
+      Rails.application.routes.url_helpers.rails_blob_path(
+        blob,
+        host: bindings[:view].request.base_url
+      )
     end
   end
 
-  # ————————————————————————————————————————————————————————————————
-  # 2) Monkey-patch ActiveStorage fields so we only preview persisted blobs
-  # ————————————————————————————————————————————————————————————————
-  if defined?(RailsAdmin::Config::Fields::Types::ActiveStorage)
-    RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
-      register_instance_option :resource_url do
-        attached = bindings[:object].public_send(name)
-        blob     = attached&.blob
-        if blob&.persisted?
-          Rails.application.routes.url_helpers.rails_blob_path(
-            blob,
-            host: bindings[:view].request.base_url
-          )
-        end
-      end
-
-      register_instance_option :pretty_value do
-        blob = bindings[:object].public_send(name)&.blob
-        if blob&.persisted?
-          view = bindings[:view]
-          url  = view.rails_blob_path(blob, host: view.request.base_url)
-          view.tag.img(src: url, style: 'max-width: 200px;')
-        end
-      end
+  register_instance_option :pretty_value do
+    blob = bindings[:object].public_send(name)&.blob
+    if blob&.persisted?
+      view = bindings[:view]
+      url  = view.rails_blob_path(blob, host: view.request.base_url)
+      view.tag.img(src: url, style: 'max-width: 200px;')
     end
   end
+end
 
-  # ————————————————————————————————————————————————————————————————
-  # 3) Monkey-patch generic FileUpload so it doesn’t blow up on nil URLs
-  # ————————————————————————————————————————————————————————————————
-  if defined?(RailsAdmin::Config::Fields::Types::FileUpload)
-    RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
-      register_instance_option :pretty_value do
-        url = resource_url
-        if url.present?
-          bindings[:view].tag.img(src: url, style: 'max-width: 200px;')
-        end
-      end
+# Monkey-patch generic FileUpload so it won’t try to preview a nil URL.
+RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
+  register_instance_option :pretty_value do
+    url = resource_url
+    if url.present?
+      bindings[:view].tag.img(src: url, style: 'max-width: 200px;')
     end
   end
 end
 
 # ————————————————————————————————————————————————————————————————
-# 4) Your normal RailsAdmin.config block
+# 3) Your standard RailsAdmin configuration
 # ————————————————————————————————————————————————————————————————
 RailsAdmin.config do |config|
   config.asset_source      = :importmap
@@ -138,9 +124,11 @@ RailsAdmin.config do |config|
     weight           1
     label_plural     'Kiosks'
     object_label_method :slug
+
     list do
       %i[name slug catalog_url kiosk_group].each { |f| field f }
     end
+
     edit do
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
