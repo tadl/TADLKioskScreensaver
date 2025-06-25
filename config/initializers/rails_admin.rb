@@ -1,27 +1,28 @@
 # config/initializers/rails_admin.rb
 
 # ——————————————————————————————————————————————————————————————
-# 1) Downgrade Turbo-Stream requests back to HTML so RailsAdmin
-#    won’t return 406 on uploads.
+# 1) Downgrade Turbo-Stream requests to plain HTML so RailsAdmin
+#    never chokes on Accept: text/vnd.turbo-stream.html
 # ——————————————————————————————————————————————————————————————
-Rails.application.config.to_prepare do
-  require 'rails_admin/main_controller'
-  RailsAdmin::MainController.class_eval do
-    before_action :downgrade_turbo_stream_format!
+RailsAdmin::MainController.class_eval do
+  before_action :downgrade_turbo_stream_format!
 
-    private
+  private
 
-    def downgrade_turbo_stream_format!
-      request.format = :html if request.format.turbo_stream?
+  def downgrade_turbo_stream_format!
+    if request.format.turbo_stream?
+      request.format = :html
     end
   end
 end
 
 # ——————————————————————————————————————————————————————————————
 # 2) Monkey-patch ActiveStorage field so we never call signed_id
-#    on blobs not yet in the DB, and only preview persisted blobs.
+#    on a blob that hasn’t hit the database yet, and we only
+#    try to preview persisted blobs.
 # ——————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
+  # override the URL builder so it only fires when blob.persisted?
   register_instance_option :resource_url do
     attached = bindings[:object].public_send(name)
     blob     = attached&.blob
@@ -33,6 +34,7 @@ RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
     end
   end
 
+  # only show a preview once the blob actually exists in the DB
   register_instance_option :pretty_value do
     blob = bindings[:object].public_send(name)&.blob
     if blob&.persisted?
@@ -43,7 +45,8 @@ RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
   end
 end
 
-# Monkey-patch FileUpload so it doesn’t call image_tag(nil)
+# Monkey-patch the generic FileUpload type too, so it never
+# tries to call image_tag(nil) and blow up.
 RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
   register_instance_option :pretty_value do
     url = resource_url
