@@ -1,22 +1,21 @@
 # config/initializers/rails_admin_turbo_fallback.rb
 
+# We need to load the MainController class so we can reopen it.
+# Depending on load order, RailsAdmin::MainController may not yet be defined,
+# so wrap in to_prepare to guarantee it’s there.
 Rails.application.config.to_prepare do
-  # Ensure the MainController class is loaded before we reopen it
   begin
     require 'rails_admin/main_controller'
   rescue LoadError
-    # if it isn’t yet, to_prepare will fire again on next reload
+    # will retry on next to_prepare if not yet autoloaded
   end
 
   if defined?(RailsAdmin::MainController)
     RailsAdmin::MainController.class_eval do
-      before_action :force_html_for_turbo_stream
-
-      private
-
-      def force_html_for_turbo_stream
-        # Turbo submits as :turbo_stream, which RailsAdmin doesn’t handle → force to HTML
-        request.format = :html if request.format.symbol == :turbo_stream
+      rescue_from ActionController::UnknownFormat do
+        # If RailsAdmin doesn’t know about :turbo_stream, treat it as HTML.
+        request.format = :html
+        retry
       end
     end
   end
