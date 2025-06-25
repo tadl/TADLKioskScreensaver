@@ -24,6 +24,7 @@ class User < ApplicationRecord
   # ——————————————————————————————————————————
   # associations for permissions
   has_many :user_permissions, dependent: :destroy
+  has_many :kiosk_groups, through: :user_permissions
   has_many :permissions, through: :user_permissions
 
   # admin? comes for free if you have a boolean `admin` column
