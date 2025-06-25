@@ -71,7 +71,7 @@ RailsAdmin.config do |config|
         read_only true              # you can’t change the user here
       end
       field :permission
-      field :kiosk_gruops do
+      field :kiosk_groups do
         help 'Select which kiosk groups this user may manage.'
       end
     end
