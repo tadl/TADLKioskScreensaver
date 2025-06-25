@@ -1,28 +1,26 @@
 # config/initializers/rails_admin.rb
 
-# ——————————————————————————————————————————————————————————————————————
-# 1) Downgrade any Turbo-Stream–format POSTs back to HTML
-#    so RailsAdmin’s create/update actions don’t return 406.
-#    Use after_initialize so RailsAdmin::MainController is defined.
-# ——————————————————————————————————————————————————————————————————————
-Rails.application.config.after_initialize do
-  if defined?(RailsAdmin::MainController)
-    RailsAdmin::MainController.class_eval do
-      before_action :downgrade_turbo_stream_format!
+# ——————————————————————————————————————————————————————————————
+# 1) Downgrade Turbo-Stream requests back to HTML so RailsAdmin
+#    won’t return 406 on uploads.
+# ——————————————————————————————————————————————————————————————
+Rails.application.config.to_prepare do
+  require 'rails_admin/main_controller'
+  RailsAdmin::MainController.class_eval do
+    before_action :downgrade_turbo_stream_format!
 
-      private
+    private
 
-      def downgrade_turbo_stream_format!
-        request.format = :html if request.format.turbo_stream?
-      end
+    def downgrade_turbo_stream_format!
+      request.format = :html if request.format.turbo_stream?
     end
   end
 end
 
-# ——————————————————————————————————————————————————————————————————————
-# 2) Monkey-patch ActiveStorage fields so we never call signed_id
-#    on blobs that haven’t been saved yet, and only preview persisted blobs.
-# ——————————————————————————————————————————————————————————————————————
+# ——————————————————————————————————————————————————————————————
+# 2) Monkey-patch ActiveStorage field so we never call signed_id
+#    on blobs not yet in the DB, and only preview persisted blobs.
+# ——————————————————————————————————————————————————————————————
 RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
   register_instance_option :resource_url do
     attached = bindings[:object].public_send(name)
@@ -45,7 +43,7 @@ RailsAdmin::Config::Fields::Types::ActiveStorage.class_eval do
   end
 end
 
-# Monkey-patch generic FileUpload so it won’t try to preview a nil URL.
+# Monkey-patch FileUpload so it doesn’t call image_tag(nil)
 RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
   register_instance_option :pretty_value do
     url = resource_url
@@ -55,9 +53,6 @@ RailsAdmin::Config::Fields::Types::FileUpload.class_eval do
   end
 end
 
-# ——————————————————————————————————————————————————————————————————————
-# 3) Your normal RailsAdmin config (unchanged from before)
-# ——————————————————————————————————————————————————————————————————————
 RailsAdmin.config do |config|
   config.asset_source      = :importmap
   config.parent_controller = '::ApplicationController'
@@ -75,7 +70,9 @@ RailsAdmin.config do |config|
   config.main_app_name           = ['Kiosk Screensaver', 'Admin']
   config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
   config.navigation_static_label = 'Account'
-  config.navigation_static_links = { 'Sign out' => '/sign_out' }
+  config.navigation_static_links = {
+    'Sign out' => '/sign_out'
+  }
 
   # == Actions ==
   config.actions do
@@ -108,11 +105,13 @@ RailsAdmin.config do |config|
     navigation_label 'Content'
     weight          0
     label_plural    'Kiosk Groups'
+
     list do
       field :name
       field :slug
       field :kiosks
     end
+
     edit do
       %i[name slug kiosks].each do |f|
         field f do
