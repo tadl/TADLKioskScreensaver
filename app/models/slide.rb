@@ -8,12 +8,14 @@ class Slide < ApplicationRecord
   before_validation :set_default_title
   before_validation :set_default_display_seconds
 
+  # Core validations
   validates :title, presence: true
   validates :display_seconds,
             numericality: { only_integer: true, greater_than: 0 }
+  validate  :start_date_before_end_date
 
-  validate :start_date_before_end_date
-  validate :validate_image_dimensions, if: -> { image.attached? }
+  # New: validate right on upload that the image is 1920×1080
+  validate  :validate_image_dimensions, if: -> { image.attached? }
 
   # Used by RailsAdmin to label slide objects
   def rails_admin_label
@@ -33,13 +35,10 @@ class Slide < ApplicationRecord
 
   # Return a slice of the image metadata once analyzed (if available)
   def image_metadata
-    # only try to analyze if the file is accessible
-    begin
-      image.analyze unless image.analyzed?
-    rescue ActiveStorage::FileNotFoundError
-      return {}
-    end
+    analyze_image_once!
     image.metadata.slice("width", "height", "content_type")
+  rescue ActiveStorage::FileNotFoundError
+    {}
   end
 
   private
@@ -62,17 +61,23 @@ class Slide < ApplicationRecord
     end
   end
 
+  # Kick off analysis (once) so metadata["width"/"height"] is populated
+  def analyze_image_once!
+    return if image.analyzed?
+    image.analyze
+  end
+
   # Ensure (when possible) the upload is exactly 1920×1080px
   def validate_image_dimensions
-    # Try to kick off synchronous analysis; if file not yet on disk, bail out
     begin
-      image.analyze unless image.analyzed?
+      analyze_image_once!
     rescue ActiveStorage::FileNotFoundError
+      # image hasn't yet hit disk; we'll skip for now and re-validate on next save
       return
     end
 
-    w = image.metadata["width"]
-    h = image.metadata["height"]
+    w =        image.metadata["width"]
+    h =        image.metadata["height"]
 
     unless w == 1920 && h == 1080
       errors.add(
