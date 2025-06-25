@@ -169,17 +169,7 @@ RailsAdmin.config do |config|
 
     edit do
       field :title
-      field :image, :active_storage do
-        cache_value do
-          record = bindings[:object]
-          attach = record.send(name)
-          if record.persisted? && attach.attached?
-            attach.signed_id
-          end
-        rescue
-          nil
-        end
-      end
+      field :image, :active_storage
       field :display_seconds
       field :start_date
       field :end_date
