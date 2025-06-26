@@ -229,12 +229,14 @@ RailsAdmin.config do |config|
         pretty_value do
           md = bindings[:object].image_metadata
           w, h = md['width'], md['height']
-          "#{w || '?'}×#{h || '?'} " +
-            if w == 1920 && h == 1080
-              '<span class="text-success">✓</span>'
-            else
-              '<span class="text-danger font-weight-bold">✕</span>'
-            end
+
+          text = "#{w || '?'}×#{h || '?'} "
+          if w == 1920 && h == 1080
+            text << '<span class="text-success">✓</span>'
+          else
+            text << '<span class="text-danger font-weight-bold">✕</span>'
+          end
+          text.html_safe      # ← mark your markup safe so it renders
         end
       end
 
