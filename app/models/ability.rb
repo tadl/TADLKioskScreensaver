@@ -19,6 +19,7 @@ class Ability
     else
       # 3) All non-admins: basic read + RailsAdmin access
       can :read,      :all
+      cannot :read, Kiosk
       can :access,    :rails_admin
       can :dashboard, :all
 
@@ -34,7 +35,7 @@ class Ability
         # can view their kiosk groups
         can :read,    KioskGroup, id: group_ids
         # can manage kiosks in those groups
-        can :manage,  Kiosk,      kiosk_group_id: group_ids
+        can [:read, :create, :update],  Kiosk,      kiosk_group_id: group_ids
         # can read/create/update slides in those kiosks
         can [:read, :create, :update], Slide, kiosks: { kiosk_group_id: group_ids }
       end

@@ -23,18 +23,26 @@ RailsAdmin.config do |config|
   config.actions do
     dashboard
     index
+
     new do
       except ['UserPermission']
     end
+
     export
     bulk_delete
     show
     edit
+
     delete do
-      except ['UserPermission', 'Kiosk', 'KioskGroup']
+      # Only allow delete on Slide and Permission
+      only ['Slide', 'Permission']
+
       register_instance_option :visible? do
-        obj = bindings[:object]
-        obj.is_a?(::Slide) ? obj.kiosks.empty? : true
+        bindings[:controller].current_ability.can?(:destroy, bindings[:object])
+      end
+
+      register_instance_option :linkable? do
+        visible?
       end
     end
   end
@@ -42,22 +50,17 @@ RailsAdmin.config do |config|
   # == Permission ==
   config.model 'Permission' do
     navigation_label 'Admin'
-    # Show this only to admins
-    visible do
-      bindings[:controller].current_user.admin?
-    end
+    visible { bindings[:controller].current_user.admin? }
   end
 
-  # == UserPermission (aka Users) ==
+  # == UserPermission ==
   config.model 'UserPermission' do
     navigation_label 'Admin'
-    label        'User'
-    label_plural 'Users'
+    label            'User'
+    label_plural     'Users'
     object_label_method :rails_admin_label
 
-    visible do
-      bindings[:controller].current_ability.can?(:manage, UserPermission)
-    end
+    visible { bindings[:controller].current_ability.can?(:manage, UserPermission) }
 
     list do
       field :user
@@ -95,9 +98,7 @@ RailsAdmin.config do |config|
     weight           0
     label_plural     'Kiosk Groups'
 
-    visible do
-      bindings[:controller].current_user.admin?
-    end
+    visible { bindings[:controller].current_user.admin? }
 
     list do
       field :name
@@ -124,13 +125,27 @@ RailsAdmin.config do |config|
 
   # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label    'Content'
-    weight              1
-    label_plural        'Kiosks'
+    navigation_label 'Content'
+    weight           1
+    label_plural     'Kiosks'
     object_label_method :slug
 
     list do
-      %i[name slug catalog_url kiosk_group].each { |f| field f }
+      # Only show kiosks in your groups (unless admin)
+      register_instance_option :scoped_collection do
+        user = bindings[:controller].current_user
+        model = bindings[:abstract_model].model
+        if user.admin?
+          model.all
+        else
+          model.where(kiosk_group_id: user.kiosk_group_ids)
+        end
+      end
+
+      field :name
+      field :slug
+      field :catalog_url
+      field :kiosk_group
     end
 
     create do
@@ -145,7 +160,7 @@ RailsAdmin.config do |config|
           Proc.new do |scope|
             scope
               .joins(image_attachment: :blob)
-              .where("(active_storage_blobs.metadata::json->>'width')  = '1920'")
+              .where("(active_storage_blobs.metadata::json->>'width') = '1920'")
               .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
           end
         end
@@ -154,17 +169,18 @@ RailsAdmin.config do |config|
 
     edit do
       field :slides do
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
         help 'Only slides at exactly 1920×1080 are available here.'
         associated_collection_scope do
           Proc.new do |scope|
             scope
               .joins(image_attachment: :blob)
-              .where("(active_storage_blobs.metadata::json->>'width')  = '1920'")
+              .where("(active_storage_blobs.metadata::json->>'width') = '1920'")
               .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
           end
         end
       end
+
       %i[name slug catalog_url kiosk_group].each do |f|
         field f do
           visible false
@@ -262,19 +278,16 @@ RailsAdmin.config do |config|
       field :end_date
 
       field :kiosks do
-        visible do
-          md = bindings[:object].image_metadata
-          md['width'] == 1920 && md['height'] == 1080
-        end
-        read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
+        visible { bindings[:object].image_metadata.values_at('width','height') == [1920,1080] }
+        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
         help 'You can only assign a kiosk to a 1920×1080 slide.'
         associated_collection_scope do
-          current_user = bindings[:controller].current_user
           Proc.new do |scope|
-            if current_user.admin?
+            user = bindings[:controller].current_user
+            if user.admin?
               scope
             else
-              scope.where(kiosk_group_id: current_user.kiosk_group_ids)
+              scope.where(kiosk_group_id: user.kiosk_group_ids)
             end
           end
         end
@@ -282,4 +295,3 @@ RailsAdmin.config do |config|
     end
   end
 end
-
