@@ -9,6 +9,7 @@ Rails.application.config.assets.paths << Rails.root.join("node_modules/@fortawes
 Rails.application.config.assets.precompile += %w(
   rails_admin.css
   rails_admin_custom.css
+  rails_admin_responsive.css
   rails_admin.js
 )
 
