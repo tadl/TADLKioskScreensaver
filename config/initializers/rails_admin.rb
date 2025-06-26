@@ -17,22 +17,19 @@ RailsAdmin.config do |config|
   config.main_app_name           = ['Kiosk Screensaver', 'Admin']
   config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
   config.navigation_static_label = 'Account'
-  config.navigation_static_links  = { 'Sign out' => '/sign_out' }
+  config.navigation_static_links = { 'Sign out' => '/sign_out' }
 
   # == Actions ==
   config.actions do
     dashboard
     index
-
     new do
       except ['UserPermission']
     end
-
     export
     bulk_delete
     show
     edit
-
     delete do
       except ['UserPermission', 'Kiosk', 'KioskGroup']
     end
@@ -49,8 +46,8 @@ RailsAdmin.config do |config|
   # == UserPermission (aka Users) ==
   config.model 'UserPermission' do
     navigation_label 'Admin'
-    label               'User'
-    label_plural        'Users'
+    label        'User'
+    label_plural 'Users'
     object_label_method :rails_admin_label
 
     visible do
@@ -61,9 +58,7 @@ RailsAdmin.config do |config|
       field :user
       field :permission
       field :kiosk_groups do
-        pretty_value do
-          bindings[:object].kiosk_groups.map(&:name).join(', ')
-        end
+        pretty_value { bindings[:object].kiosk_groups.map(&:name).join(', ') }
       end
     end
 
@@ -105,11 +100,19 @@ RailsAdmin.config do |config|
       field :kiosks
     end
 
+    create do
+      field :name
+      field :slug
+      field :kiosks do
+        help 'Assign existing kiosks to this group.'
+      end
+    end
+
     edit do
-      %i[name slug kiosks].each do |f|
-        field f do
-          read_only true
-        end
+      field :name
+      field :slug
+      field :kiosks do
+        help 'Update which kiosks belong to this group.'
       end
     end
   end
@@ -125,8 +128,26 @@ RailsAdmin.config do |config|
       %i[name slug catalog_url kiosk_group].each { |f| field f }
     end
 
+    create do
+      field :name
+      field :slug
+      field :catalog_url
+      field :kiosk_group
+
+      field :slides do
+        help 'Only slides at exactly 1920×1080 are available here.'
+        associated_collection_scope do
+          Proc.new do |scope|
+            scope
+              .joins(image_attachment: :blob)
+              .where("(active_storage_blobs.metadata::json->>'width')  = '1920'")
+              .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
+          end
+        end
+      end
+    end
+
     edit do
-      # Only slides picker for non-admins
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
         help 'Only slides at exactly 1920×1080 are available here.'
@@ -140,7 +161,7 @@ RailsAdmin.config do |config|
         end
       end
 
-      # Hide all other fields
+      # hide everything else on edit
       %i[name slug catalog_url kiosk_group].each do |f|
         field f do
           visible false
@@ -201,7 +222,6 @@ RailsAdmin.config do |config|
         label    'Assigned Kiosks'
         sortable false
       end
-
     end
 
     create do
@@ -236,16 +256,13 @@ RailsAdmin.config do |config|
       field :end_date
 
       field :kiosks do
-        # only show kiosk-assignment if slide is 1920×1080
         visible do
           md = bindings[:object].image_metadata
           md['width'] == 1920 && md['height'] == 1080
         end
         read_only { !bindings[:controller].current_ability.can?(:manage, Slide) }
         help 'You can only assign a kiosk to a 1920×1080 slide.'
-
         associated_collection_scope do
-          # use closure to capture bindings
           current_user = bindings[:controller].current_user
           Proc.new do |scope|
             if current_user.admin?
@@ -257,7 +274,5 @@ RailsAdmin.config do |config|
         end
       end
     end
-
   end
 end
-
