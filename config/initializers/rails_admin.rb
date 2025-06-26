@@ -211,10 +211,13 @@ RailsAdmin.config do |config|
         pretty_value do
           md = bindings[:object].image_metadata
           w, h = md['width'], md['height']
-          "#{w || '?'}×#{h || '?'} " +
-            (w == 1920 && h == 1080 ?
-              '<span class="text-success">✓</span>' :
-              '<span class="text-danger font-weight-bold">✕</span>')
+          result = "#{w || '?'}×#{h || '?'} " +
+            if w == 1920 && h == 1080
+              '<span class="text-success">✓</span>'
+            else
+              '<span class="text-danger font-weight-bold">✕</span>'
+            end
+          result.html_safe
         end
       end
 
