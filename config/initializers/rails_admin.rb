@@ -32,14 +32,19 @@ RailsAdmin.config do |config|
     edit
     delete do
       except ['UserPermission', 'Kiosk', 'KioskGroup']
+      register_instance_option :visible? do
+        obj = bindings[:object]
+        obj.is_a?(::Slide) ? obj.kiosks.empty? : true
+      end
     end
   end
 
   # == Permission ==
   config.model 'Permission' do
     navigation_label 'Admin'
+    # Show this only to admins
     visible do
-      bindings[:controller].current_ability.can?(:manage, Permission)
+      bindings[:controller].current_user.admin?
     end
   end
 
@@ -160,8 +165,6 @@ RailsAdmin.config do |config|
           end
         end
       end
-
-      # hide everything else on edit
       %i[name slug catalog_url kiosk_group].each do |f|
         field f do
           visible false
@@ -279,3 +282,4 @@ RailsAdmin.config do |config|
     end
   end
 end
+
