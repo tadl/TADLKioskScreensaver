@@ -48,6 +48,15 @@ class Slide < ApplicationRecord
     {}
   end
 
+  # Override kiosk_ids= so “invisible” kiosks always stay assigned
+  def kiosk_ids=(incoming_ids)
+    submitted = Array(incoming_ids).reject(&:blank?).map(&:to_i)
+    allowed   = Kiosk.where(kiosk_group_id: Current.user.kiosk_group_ids).pluck(:id)
+    hidden    = self.kiosk_ids - allowed
+    super((submitted & allowed) | hidden)
+  end
+
+
   private
 
   # If the user left title blank, use the image filename (without extension)

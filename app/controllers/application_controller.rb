@@ -1,5 +1,6 @@
 # app/controllers/application_controller.rb
 class ApplicationController < ActionController::Base
+  before_action { Current.user = current_user }
   # Make these methods available in views and controllers
   helper_method :current_user, :user_signed_in?
 
