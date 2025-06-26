@@ -4,6 +4,8 @@ class ScreensaverController < ApplicationController
   layout false
 
   def index
+    return render(:landing) if params[:kiosk].blank?
+
     @kiosk = Kiosk.find_by!(slug: params[:kiosk])
     today  = Date.current
 
