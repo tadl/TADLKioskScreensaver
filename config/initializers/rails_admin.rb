@@ -29,8 +29,7 @@ RailsAdmin.config do |config|
     show
     edit   # back to default controller behavior
     delete do
-      only ['Slide', 'Permission']
-
+      # Allow destroy on any model for which the user’s Ability permits :destroy
       register_instance_option :visible? do
         bindings[:controller].current_ability.can?(:destroy, bindings[:object])
       end

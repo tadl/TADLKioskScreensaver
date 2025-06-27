@@ -7,6 +7,7 @@ class Slide < ApplicationRecord
   # Auto-set title and duration defaults before validation
   before_validation :set_default_title
   before_validation :set_default_display_seconds
+  before_validation :set_default_start_date, on: :create
 
   # Core validations
   validates :title, presence: true
@@ -68,6 +69,10 @@ class Slide < ApplicationRecord
   # If display_seconds wasn't provided, default to 10
   def set_default_display_seconds
     self.display_seconds = 10 if display_seconds.blank?
+  end
+
+  def set_default_start_date
+    self.start_date ||= Time.zone.today
   end
 
   def start_date_before_end_date
