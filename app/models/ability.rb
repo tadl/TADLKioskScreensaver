@@ -29,6 +29,11 @@ class Ability
 
         # Slide: anyone in a group can read/create/update all slides...
         can [:read, :create, :update], Slide
+        if user.can?('manage_slides')
+          can :destroy, Slide do |slide|
+            slide.kiosk_ids.empty?
+          end
+        end
       end
 
       can :manage, Kiosk      if user.can?('manage_kiosks')
