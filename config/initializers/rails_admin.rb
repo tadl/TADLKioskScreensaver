@@ -140,6 +140,11 @@ RailsAdmin.config do |config|
       field :slug
       field :catalog_url
       field :kiosk_group
+      field :slides_count do
+        label 'Slides Count'
+        sortable :slides_count
+        filterable true
+      end
     end
 
     create do
