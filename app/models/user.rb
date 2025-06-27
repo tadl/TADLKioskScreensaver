@@ -1,10 +1,10 @@
 # app/models/user.rb
 class User < ApplicationRecord
   # ——————————————————————————————————————————
-  # find-or-create by omniauth, but only tadl.org accounts
+  # find-or-create by omniauth, but only authorized google domain accounts
   def self.from_omniauth(auth)
     email = auth.info.email.to_s.downcase
-    return nil unless email.end_with?('@tadl.org')
+    return nil unless email.end_with?("@#{GOOGLE_DOMAIN}")
 
     # first_or_initialize so we update name/avatar on every login
     where(email: email).first_or_initialize.tap do |u|

@@ -14,7 +14,7 @@ class SessionsController < ApplicationController
       redirect_to rails_admin.dashboard_path
     else
       reset_session
-      redirect_to root_path, alert: 'Only tadl.org accounts allowed'
+      redirect_to root_path, alert: "Only #{GOOGLE_DOMAIN} accounts allowed"
     end
   end
 

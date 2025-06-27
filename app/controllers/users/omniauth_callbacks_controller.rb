@@ -11,7 +11,7 @@ module Users
         session[:user_id] = user.id
         redirect_to main_app.admin_path, notice: "Signed in as #{user.name}"
       else
-        redirect_to main_app.sign_in_path, alert: 'Only tadl.org accounts may sign in.'
+        redirect_to main_app.sign_in_path, alert: "Only #{GOOGLE_DOMAIN} accounts may sign in."
       end
     end
 

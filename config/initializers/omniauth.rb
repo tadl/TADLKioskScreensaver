@@ -14,6 +14,7 @@ OmniAuth.config.silence_get_warning    = true
 Rails.application.config.middleware.use OmniAuth::Builder do
   google_id     = ENV['GOOGLE_CLIENT_ID']
   google_secret = ENV['GOOGLE_CLIENT_SECRET']
+  google_domain = ENV['GOOGLE_DOMAIN']
 
   if google_id.present? && google_secret.present?
     provider :google_oauth2,
@@ -21,7 +22,7 @@ Rails.application.config.middleware.use OmniAuth::Builder do
       google_secret,
       {
         scope:  'userinfo.email,userinfo.profile',
-        hd:     'tadl.org',
+        hd:     google_domain,
         prompt: 'select_account',
       }
   else
