@@ -1,10 +1,11 @@
 # TADL Kiosk Screensaver
-
-<p align="right">
-  <img src="https://raw.githubusercontent.com/tadl/TADLKioskScreensaver/main/app/assets/images/mascot-kio.png" alt="Kiosk Screensaver Mascot" width="200" />
-</p>
-
-A Rails application to manage and serve full‑screen slideshows on library kiosks. Allows uploading 1920×1080 images, scheduling display durations, and assigning slides to individual kiosks via an admin interface.
+<table><tr>
+  <td valign="top">
+    A Rails application to manage and serve full‑screen slideshows on library kiosks. Allows uploading 1920×1080 images, scheduling display durations, and assigning slides to individual kiosks via an admin interface.
+  </td><td valign="top" width="200">
+    <img src="https://raw.githubusercontent.com/tadl/TADLKioskScreensaver/main/app/assets/images/mascot-kio.png" alt="Kiosk Screensaver Mascot" width="200" />
+  </td>
+</tr></table>
 
 ## Key Features
 
