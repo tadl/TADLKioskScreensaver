@@ -16,8 +16,6 @@ RailsAdmin.config do |config|
   # == UI ==
   config.main_app_name           = ['Kiosk Screensaver', 'Admin']
   config.included_models         = %w[KioskGroup Kiosk Slide Permission UserPermission]
-  config.navigation_static_label = 'Account'
-  config.navigation_static_links = { 'Sign out' => '/sign_out' }
 
   # == Actions ==
   config.actions do
