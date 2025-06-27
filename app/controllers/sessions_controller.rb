@@ -10,6 +10,7 @@ class SessionsController < ApplicationController
     if user
       session[:user_id] = user.id
       session[:admin]   = user.admin?
+      flash.discard
       redirect_to rails_admin.dashboard_path
     else
       reset_session
