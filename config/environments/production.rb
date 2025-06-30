@@ -63,7 +63,7 @@ Rails.application.configure do
   # -------------------------------------------------------------------
   # (Optional) Host Authorization / health check
   # -------------------------------------------------------------------
-  config.hosts << "kiosks.tadl.org"
+  #config.hosts << "no"
   # config.host_authorization = { exclude: ->(req){ req.path == "/up" } }
 
   config.exceptions_app = self.routes
