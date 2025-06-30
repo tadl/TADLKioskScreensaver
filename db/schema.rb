@@ -63,7 +63,7 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.datetime "updated_at", null: false
     t.bigint "kiosk_group_id"
     t.index ["kiosk_group_id"], name: "index_kiosks_on_kiosk_group_id"
-    t.index ["slug"], name: "index_kiosks_on_slug"
+    t.index ["slug"], name: "index_kiosks_on_slug", unique: true
   end
 
   create_table "kiosks_slides", id: false, force: :cascade do |t|
