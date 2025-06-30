@@ -14,7 +14,7 @@ Rails.application.configure do
   # -------------------------------------------------------------------
   # Error reporting / caching
   # -------------------------------------------------------------------
-  config.consider_all_requests_local       = true
+  config.consider_all_requests_local       = false
   config.action_controller.perform_caching = true
 
   # -------------------------------------------------------------------
@@ -51,7 +51,7 @@ Rails.application.configure do
 
   # Set log level (default :info)
   #config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info").to_sym
-  config.log_level = :debug
+  config.log_level = :info
 
   # -------------------------------------------------------------------
   # I18n, deprecations, schema dump, etc.
