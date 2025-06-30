@@ -21,6 +21,10 @@ class User < ApplicationRecord
     image_url.presence || GravatarBuilder.new(email).url
   end
 
+  def full_name
+    name
+  end
+
   # ——————————————————————————————————————————
   # associations for permissions
   has_many :user_permissions, dependent: :destroy

@@ -22,7 +22,13 @@
   <% if _current_user %>
     <% if (user_edit = edit_user_link) %>
       <li class="nav-item edit_user_root_link">
-        <%= user_edit %>
+        <span class="nav-link d-flex align-items-center">
+          <%= image_tag _current_user.avatar_url,
+                        alt: _current_user.email,
+                        class: "rounded-circle me-1",
+                        width: 30, height: 30 %>
+          <span><%= _current_user.email %></span>
+        </span>
       </li>
     <% end %>
 

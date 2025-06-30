@@ -58,7 +58,17 @@ RailsAdmin.config do |config|
     end
 
     list do
-      field :user
+      field :user do
+        label 'User'
+        sortable 'users.email'
+        pretty_value do
+          user = bindings[:object].user
+          # show full name plus the email-local-part in parens
+          local  = user.email.to_s.split('@').first
+          name   = user.full_name.presence || user.email
+          "#{name} (#{local})"
+        end
+      end
       field :permission
       field :kiosk_groups do
         pretty_value do
