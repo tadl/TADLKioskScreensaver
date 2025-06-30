@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TADL Kiosk Screensaver App — <%= @status_code %> <%= @status_message %></title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    html, body { margin:0; padding:0; height:100%; }
+    body {
+      background: #004B8D;
+      font-family: 'Open Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      text-align: center;
+    }
+    .logo { height: 6rem; margin-bottom: 1rem; }
+    .accent { color: #FDB813; }
+    .code { font-size: 4rem; margin: 0.5rem 0; }
+    .message { font-size: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div>
+    <%= image_tag "tadl-logo.svg", alt: "TADL Logo", class: "logo" %>
+    <div class="code accent"><%= @status_code %></div>
+    <div class="message"><%= @status_message %></div>
+    <p><a href="<%= root_path %>" style="color: #FDB813; text-decoration: underline;">Return home</a></p>
+  </div>
+</body>
+</html>
