@@ -4,19 +4,24 @@ RailsAdmin.config do |config|
   config.asset_source      = :importmap
   config.parent_controller = '::ApplicationController'
 
+  # == Authentication ==
   config.authenticate_with do
     redirect_to main_app.sign_in_path unless user_signed_in?
   end
   config.current_user_method(&:current_user)
 
+  # == Authorization ==
   config.authorize_with :cancancan
 
+  # == UI ==
   config.main_app_name   = ['Kiosk Screensaver', 'Admin']
   config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
 
+  # == Actions ==
   config.actions do
     dashboard
     index
+
     new do
       except ['UserPermission']
       visible do
@@ -24,10 +29,12 @@ RailsAdmin.config do |config|
         bindings[:controller].current_ability.can?(:create, model)
       end
     end
+
     export
     bulk_delete
     show
     edit
+
     delete do
       register_instance_option :visible? do
         bindings[:controller].current_ability.can?(:destroy, bindings[:object])
@@ -38,6 +45,7 @@ RailsAdmin.config do |config|
     end
   end
 
+  # == Permission ==
   config.model 'Permission' do
     navigation_label 'Admin'
     visible do
@@ -45,6 +53,7 @@ RailsAdmin.config do |config|
     end
   end
 
+  # == UserPermission ==
   config.model 'UserPermission' do
     navigation_label 'Admin'
     label            'User'
@@ -57,18 +66,20 @@ RailsAdmin.config do |config|
 
     list do
       field :user do
-        label    'User'
+        label 'User'
         sortable 'users.email'
         pretty_value do
-          u     = bindings[:object].user
-          local = u.email.split('@').first
-          name  = u.full_name.presence || u.email
+          user = bindings[:object].user
+          local = user.email.split('@').first
+          name  = user.full_name.presence || user.email
           "#{name} (#{local})"
         end
       end
       field :permission
       field :kiosk_groups do
-        pretty_value { bindings[:object].kiosk_groups.map(&:name).join(', ') }
+        pretty_value do
+          bindings[:object].kiosk_groups.map(&:name).join(', ')
+        end
       end
     end
 
@@ -94,6 +105,7 @@ RailsAdmin.config do |config|
     end
   end
 
+  # == KioskGroup ==
   config.model 'KioskGroup' do
     navigation_label 'Content'
     weight           0
@@ -106,11 +118,12 @@ RailsAdmin.config do |config|
 
     list do
       register_instance_option :scoped_collection do
-        u = bindings[:controller].current_user
-        if u.admin? || u.can?('manage_kioskgroups')
-          KioskGroup.all
+        current_user = bindings[:controller].current_user
+        model = bindings[:abstract_model].model
+        if current_user.admin? || current_user.can?('manage_kioskgroups')
+          model.all
         else
-          KioskGroup.where(id: u.kiosk_group_ids)
+          model.where(id: current_user.kiosk_group_ids)
         end
       end
 
@@ -136,10 +149,11 @@ RailsAdmin.config do |config|
     end
   end
 
+  # == Kiosk ==
   config.model 'Kiosk' do
-    navigation_label 'Content'
-    weight           1
-    label_plural     'Kiosks'
+    navigation_label    'Content'
+    weight              1
+    label_plural        'Kiosks'
     object_label_method :slug
 
     list do
@@ -166,7 +180,9 @@ RailsAdmin.config do |config|
       field :slug
       field :catalog_url
       field :location do
-        read_only { !bindings[:controller].current_ability.can?(:manage, bindings[:object]) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:update, bindings[:object])
+        end
       end
       field :kiosk_group
       field :slides do
@@ -184,8 +200,10 @@ RailsAdmin.config do |config|
 
     edit do
       field :slides do
-        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
-        help      'Only slides at exactly 1920×1080 are available here.'
+        read_only do
+          !bindings[:controller].current_ability.can?(:update, bindings[:object])
+        end
+        help 'Only slides at exactly 1920×1080 are available here.'
         associated_collection_scope do
           Proc.new do |scope|
             scope
@@ -195,9 +213,13 @@ RailsAdmin.config do |config|
           end
         end
       end
+
       field :location do
-        read_only { !bindings[:controller].current_ability.can?(:manage, bindings[:object]) }
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, bindings[:object])
+        end
       end
+
       %i[name slug catalog_url kiosk_group].each do |f|
         field f do
           visible false
@@ -206,6 +228,7 @@ RailsAdmin.config do |config|
     end
   end
 
+  # == Slide ==
   config.model 'Slide' do
     navigation_label 'Content'
     weight           2
@@ -219,8 +242,8 @@ RailsAdmin.config do |config|
       end
 
       field :image do
-        label      'Preview'
-        sortable   false
+        label    'Preview'
+        sortable false
         formatted_value do
           slide = bindings[:object]
           if slide.image.attached?

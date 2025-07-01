@@ -29,7 +29,8 @@
     <%= image_tag "tadl-logo.svg", alt: "TADL Logo", class: "logo" %>
     <div class="code accent"><%= @code %></div>
     <div class="message"><%= @message %></div>
-    <p><a href="<%= root_path %>" style="color: #FDB813; text-decoration: underline;">Return home</a></p>
+    <p><%= link_to "Return home", main_app.root_path,
+          style: "color: #FDB813; text-decoration: underline;" %></p>
   </div>
 </body>
 </html>

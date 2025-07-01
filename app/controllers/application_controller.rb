@@ -4,6 +4,15 @@ class ApplicationController < ActionController::Base
   # Make these methods available in views and controllers
   helper_method :current_user, :user_signed_in?
 
+  rescue_from CanCan::AccessDenied do |exception|
+    # For consistency with your errors controller, set these ivars
+    @code    = 403
+    @message = exception.message.presence || "Forbidden"
+
+    # Render your errors/show.html.erb (no layout, since it’s standalone)
+    render template: 'errors/show', status: :forbidden, layout: false
+  end
+
 
   # Lookup the user from session[:user_id]
   def current_user
