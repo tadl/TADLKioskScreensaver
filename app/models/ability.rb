@@ -6,7 +6,6 @@ class Ability
     user ||= User.new
     allowed_groups = user.kiosk_group_ids
 
-    # never destroy an in‐use slide
     cannot :destroy, Slide do |slide|
       slide.kiosk_ids.any?
     end
@@ -25,10 +24,14 @@ class Ability
 
       if allowed_groups.any?
         can :read,    KioskGroup, id: allowed_groups
-        can [:read, :create, :update], Kiosk, kiosk_group_id: allowed_groups
+        can :read,    Kiosk,      kiosk_group_id: allowed_groups
 
-        # Slide: anyone in a group can read/create/update all slides...
+        if user.can?('manage_slides')
+          can :update, Kiosk, kiosk_group_id: allowed_groups
+        end
+
         can [:read, :create, :update], Slide
+
         if user.can?('manage_slides')
           can :destroy, Slide do |slide|
             slide.kiosk_ids.empty?

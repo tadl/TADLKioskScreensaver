@@ -21,7 +21,13 @@ RailsAdmin.config do |config|
   config.actions do
     dashboard
     index
-    new    { except ['UserPermission'] }
+    new do
+      except ['UserPermission']
+      visible do
+        model = bindings[:abstract_model].model
+        bindings[:controller].current_ability.can?(:create, model)
+      end
+    end
     export
     bulk_delete
     show
@@ -162,7 +168,11 @@ RailsAdmin.config do |config|
       field :name
       field :slug
       field :catalog_url
-      field :location
+      field :location do
+        read_only do
+          !bindings[:controller].current_ability.can?(:update, bindings[:object])
+        end
+      end
       field :kiosk_group
       field :slides do
         help 'Only slides at exactly 1920×1080 are available here.'
@@ -192,7 +202,11 @@ RailsAdmin.config do |config|
           end
         end
       end
-      field :location
+      field :location do
+        read_only do
+          !bindings[:controller].current_ability.can?(:manage, bindings[:object])
+        end
+      end
       %i[name slug catalog_url kiosk_group].each do |f|
         field f do
           visible false
