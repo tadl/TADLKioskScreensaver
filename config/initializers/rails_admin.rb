@@ -149,6 +149,7 @@ RailsAdmin.config do |config|
       field :name
       field :slug
       field :catalog_url
+      field :location
       field :kiosk_group
       field :slides_count do
         label 'Slides Count'
@@ -161,8 +162,8 @@ RailsAdmin.config do |config|
       field :name
       field :slug
       field :catalog_url
+      field :location
       field :kiosk_group
-
       field :slides do
         help 'Only slides at exactly 1920×1080 are available here.'
         associated_collection_scope do
@@ -191,7 +192,7 @@ RailsAdmin.config do |config|
           end
         end
       end
-
+      field :location
       %i[name slug catalog_url kiosk_group].each do |f|
         field f do
           visible false
