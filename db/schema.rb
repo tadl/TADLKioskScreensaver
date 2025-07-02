@@ -87,6 +87,7 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.date "end_date"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "fallback", default: false, null: false
   end
 
   create_table "user_permissions", force: :cascade do |t|

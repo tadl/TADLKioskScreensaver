@@ -260,20 +260,32 @@ RailsAdmin.config do |config|
       end
 
       field :title
-      field :display_seconds
+      field :display_seconds do
+        label 'Display time'
+      end
       field :start_date
       field :end_date
 
+      field :fallback do
+        label 'Fallback?'
+        sortable true
+        filterable true
+        pretty_value do
+          if bindings[:object].fallback?
+            '<span class="text-success">&#10003;</span>'.html_safe
+          end
+        end
+      end
+
       field :image_metadata do
-        label 'Dimensions'
+        label 'Valid?'
         pretty_value do
           md = bindings[:object].image_metadata
           w, h = md['width'], md['height']
-          text = "#{w || '?'}×#{h || '?'} "
           if w == 1920 && h == 1080
-            text << '<span class="text-success">✓</span>'
+            text = '<span class="text-success">✓</span>'
           else
-            text << '<span class="text-danger font-weight-bold">✕</span>'
+            text = '<span class="text-danger font-weight-bold">✕</span>'
           end
           text.html_safe
         end
@@ -299,6 +311,10 @@ RailsAdmin.config do |config|
       end
       field :start_date
       field :end_date
+      field :fallback do
+        label 'Fallback slide?'
+        help  'If checked, this slide will show when no other slides are active for a kiosk.'
+      end
     end
 
     update do
@@ -315,6 +331,10 @@ RailsAdmin.config do |config|
       end
       field :start_date
       field :end_date
+      field :fallback do
+        label 'Fallback slide?'
+        help  'If checked, this slide will show when no other slides are active for a kiosk.'
+      end
 
       field :kiosks do
         help 'You can only pick among your groups—any other existing assignments will be preserved automatically.'

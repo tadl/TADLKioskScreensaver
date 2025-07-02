@@ -4,3 +4,13 @@
   <%= link_to "Add New Slide", rails_admin.new_path('slide'),   class: "btn btn-success" %>
 
 </div>
+
+<% if Slide.fallbacks.none? %>
+  <div class="alert alert-warning" style="margin-bottom:1em;">
+    <strong>No fallback slides defined.</strong><br/>
+    When a kiosk has no active slides, it will go blank.
+    Please mark one or more slides as a fallback under
+    <a href="<%= rails_admin.index_path('Slide') %>">Admin → Slides</a>.
+  </div>
+<% end %>
+

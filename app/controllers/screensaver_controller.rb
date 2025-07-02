@@ -12,10 +12,12 @@ class ScreensaverController < ApplicationController
     today  = Date.current
 
     # grab only slides valid for today, in random order
-    @slides = @kiosk.slides
+    active_slides = @kiosk.slides
                     .where("start_date IS NULL OR start_date <= ?", today)
                     .where("end_date   IS NULL OR end_date   >= ?", today)
                     .order(Arel.sql("RANDOM()"))
+
+    @slides = active_slides.any? ? active_slides : Slide.fallbacks
 
     # if we have a kiosk param, but zero slides → show the “empty” full‐page screen
     return render(:empty) if @slides.empty?

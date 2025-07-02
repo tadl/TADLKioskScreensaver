@@ -15,6 +15,8 @@ class Slide < ApplicationRecord
             numericality: { only_integer: true, greater_than: 0 }
   validate  :start_date_before_end_date
 
+  scope :fallbacks, -> { where(fallback: true) }
+
   # Helper to check whether the image is exactly 1920×1080,
   # without raising a validation error on save
   def valid_dimensions?
