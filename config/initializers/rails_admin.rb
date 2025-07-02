@@ -164,7 +164,19 @@ RailsAdmin.config do |config|
       end
 
       field :name
-      field :slug
+      field :slug do
+        label 'Slug'
+        pretty_value do
+          slug = bindings[:object].slug
+          base = bindings[:view].request.base_url
+          bindings[:view].link_to(
+            slug,
+            "#{base}/?kiosk=#{slug}",
+            target: "_blank",
+            rel: "noopener"
+          )
+        end
+      end
       field :catalog_url
       field :location
       field :kiosk_group
