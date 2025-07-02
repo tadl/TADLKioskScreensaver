@@ -19,6 +19,7 @@ Rails.application.configure do
   config.assets.css_compressor        = nil
 
   config.active_storage.service       = :local
+  config.active_storage.service_urls_expire_in = 24.hours
 
   config.log_tags                     = [:request_id]
   logger                              = ActiveSupport::Logger.new($stdout)
