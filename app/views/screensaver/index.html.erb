@@ -74,8 +74,10 @@
 
         // Exit on any user interaction
         const exit = () => window.location = exitUrl;
-        document.addEventListener("mousemove", exit, { once: true });
-        document.addEventListener("keydown",   exit, { once: true });
+        setTimeout(() => {
+          document.addEventListener("mousemove", exit, { once: true });
+          document.addEventListener("keydown",   exit, { once: true });
+        }, 1000);
       });
     </script>
   </body>
