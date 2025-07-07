@@ -21,7 +21,12 @@ class ScreensaverController < ApplicationController
     @slides = active_slides.any? ? active_slides : Slide.fallbacks
     return render(:empty) if @slides.empty?
 
-    @exit_url = @kiosk.catalog_url
+#    @exit_url = @kiosk.catalog_url
+    base      = request.base_url
+    @exit_url = Rails.application.routes.url_helpers.exit_screensaver_url(
+                  kiosk: @kiosk.slug,
+                  host: base
+                )
 
     # Build an array of slide data with URLs, durations, and titles
     base = request.base_url
@@ -60,5 +65,14 @@ class ScreensaverController < ApplicationController
     render json: { slides: data }
   rescue ActiveRecord::RecordNotFound
     render json: { slides: [] }, status: :bad_request
+  end
+
+  def exit
+    kiosk = Kiosk.find_by(slug: params[:kiosk])
+    if kiosk
+      redirect_to kiosk.catalog_url, allow_other_host: true
+    else
+      redirect_to root_path
+    end
   end
 end

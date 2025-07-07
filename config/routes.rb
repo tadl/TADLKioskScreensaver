@@ -9,6 +9,8 @@ Rails.application.routes.draw do
 
   get '/slides.json', to: 'screensaver#slides_json', defaults: { format: :json }
 
+  get '/exit', to: 'screensaver#exit', as: :exit_screensaver
+
   root to: "screensaver#index"
 
   %w(404 422 500).each do |code|
