@@ -6,6 +6,9 @@ Rails.application.routes.draw do
   mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
 
   get "up" => "rails/health#show", as: :rails_health_check
+
+  get '/slides.json', to: 'screensaver#slides_json', defaults: { format: :json }
+
   root to: "screensaver#index"
 
   %w(404 422 500).each do |code|

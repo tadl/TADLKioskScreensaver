@@ -6,7 +6,14 @@
     <title>Kiosk Screensaver</title>
     <style>
       /* RESET EVERYTHING FOR EDGE-TO-EDGE: */
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: black; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: black;
+      }
     </style>
   </head>
 
@@ -26,8 +33,12 @@
 
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        // Build the slide list (URL, duration, optional alt text)
-        const slides = [
+        // Exit URL & refresh interval
+        const EXIT_URL         = "<%= j @exit_url %>";
+        const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
+
+        // Build initial slide list (url, duration, title)
+        let slides = [
           <% @slides.each do |s| %>
             {
               url:      "<%= url_for(s.image) %>",
@@ -39,27 +50,31 @@
 
         if (!slides.length) return;
 
-        // Fisher–Yates shuffle once on load
-        for (let i = slides.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [slides[i], slides[j]] = [slides[j], slides[i]];
+        // Fisher–Yates shuffle
+        function shuffle() {
+          for (let i = slides.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [slides[i], slides[j]] = [slides[j], slides[i]];
+          }
         }
 
         let idx = 0;
-        const img     = document.getElementById("screensaver-image");
-        const exitUrl = "<%= @exit_url %>";
+        const img = document.getElementById("screensaver-image");
 
+        // Show the current slide
         function showCurrentSlide() {
           img.src = slides[idx].url;
           img.alt = slides[idx].title || "";
         }
 
+        // Advance to next slide
         function nextSlide() {
           idx = (idx + 1) % slides.length;
           showCurrentSlide();
           schedule();
         }
 
+        // Schedule the next slide change
         function schedule() {
           clearTimeout(window._timer);
           window._timer = setTimeout(
@@ -68,18 +83,38 @@
           );
         }
 
-        // Start
-        showCurrentSlide();
-        schedule();
-
-        // Exit on any user interaction
-        const exit = () => window.location = exitUrl;
+        // Exit handler on deliberate interaction
+        function exit() { window.location = EXIT_URL; }
         setTimeout(() => {
+          document.addEventListener("click",     exit, { once: true });
           document.addEventListener("mousemove", exit, { once: true });
           document.addEventListener("keydown",   exit, { once: true });
         }, 2000);
+
+        // Initial start
+        shuffle();
+        showCurrentSlide();
+        schedule();
+
+        // Periodic JSON refresh
+        setInterval(async () => {
+          try {
+            const res  = await fetch(`/slides.json?kiosk=<%= j params[:kiosk] %>`);
+            if (!res.ok) throw new Error(res.statusText);
+            const { slides: updated } = await res.json();
+            if (Array.isArray(updated) && updated.length) {
+              slides = updated;
+              shuffle();
+              idx = 0;
+              showCurrentSlide();
+              schedule();
+              console.log("Slides refreshed:", slides);
+            }
+          } catch (err) {
+            console.error("Slide refresh failed:", err);
+          }
+        }, REFRESH_INTERVAL);
       });
     </script>
   </body>
 </html>
-
