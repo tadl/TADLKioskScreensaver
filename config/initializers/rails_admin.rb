@@ -238,6 +238,42 @@ RailsAdmin.config do |config|
         end
       end
     end
+    show do
+      field :name
+      field :location
+      field :slides do
+        label 'Slides'
+        pretty_value do
+          base = bindings[:view].request.base_url
+          slides = bindings[:object].slides
+          thumbs = slides.map do |slide|
+            variant = slide.image.variant(resize_to_limit: [150, 150]).processed
+            thumb_url = Rails.application.routes.url_helpers.rails_representation_url(
+              variant,
+              host: base
+            )
+            full_url  = Rails.application.routes.url_helpers.rails_blob_url(
+              slide.image,
+              host: base
+            )
+            bindings[:view].link_to(full_url, target: '_blank', rel: 'noopener') do
+              bindings[:view].tag.div(style: 'display:inline-block; margin:5px; text-align:center;') do
+                bindings[:view].tag.img(
+                  src: thumb_url,
+                  style: 'max-width:150px; max-height:150px;'
+                ) +
+                bindings[:view].tag.br +
+                bindings[:view].tag.span(slide.title)
+              end
+            end
+          end
+          thumbs.join.html_safe
+        end
+      end
+      field :slug
+      field :catalog_url
+      field :kiosk_group
+    end
   end
 
   # == Slide ==
