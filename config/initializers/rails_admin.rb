@@ -378,7 +378,13 @@ RailsAdmin.config do |config|
         help     'Leave blank to default to 10 seconds.'
       end
       field :start_date
-      field :end_date
+      field :end_date do
+        read_only do
+          slide = bindings[:object]
+          user  = bindings[:controller].current_user
+          slide.kiosks.where.not(kiosk_group_id: user.kiosk_group_ids).exists?
+        end
+      end
       field :fallback do
         label 'Fallback slide?'
         help  'If checked, this slide will show when no other slides are active for a kiosk.'
