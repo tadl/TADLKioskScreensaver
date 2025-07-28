@@ -20,61 +20,50 @@
   curr_month   = today.beginning_of_month..today
   prev_month   = (today - 1.month).beginning_of_month..(today - 1.month).end_of_month
   curr_year    = today.beginning_of_year..today
-  prev_year    = (today.last_year.beginning_of_year)..(today.last_year.end_of_year)
+  prev_year    = today.last_year.beginning_of_year..today.last_year.end_of_year
 
+  # Parse date range from params or use default (last 30 days)
   start_date   = params[:start].present? ? Date.parse(params[:start]) : last_30_days.begin
   end_date     = params[:end].present?   ? Date.parse(params[:end])   : last_30_days.end
 
-  sessions = KioskSession.includes(kiosk: :kiosk_group).where(started_at: start_date.beginning_of_day..end_date.end_of_day)
+  # Load sessions, eager load kiosk + group for efficiency
+  sessions = KioskSession
+    .includes(kiosk: :kiosk_group)
+    .where(started_at: start_date.beginning_of_day..end_date.end_of_day)
 
-  # Which kiosk groups does this user have access to?
+  # User's accessible kiosk groups
   accessible_groups = current_user.admin? ? KioskGroup.all : current_user.kiosk_groups
+  accessible_groups = accessible_groups.order(:name)
 
-  # Only include groups that had sessions in the selected range
+  # Only include groups that had sessions in range
   group_ids_with_sessions = sessions.map { |s| s.kiosk&.kiosk_group_id }.compact.uniq
   available_groups = accessible_groups.where(id: group_ids_with_sessions)
 
-  # The special dropdown options
-  all_key = current_user.admin? ? "all_kiosks" : "all_my_kiosks"
+  # "All Kiosks" or "All My Kiosks" dropdown option
+  all_key   = current_user.admin? ? "all_kiosks" : "all_my_kiosks"
   all_label = current_user.admin? ? "All Kiosks" : "All My Kiosks"
 
-  # Build dropdown choices
-  group_choices = available_groups.map { |g| [g.name, g.id] }.sort_by(&:first)
+  group_choices = available_groups.map { |g| [g.name, g.id.to_s] }
   dropdown_options = [[all_label, all_key]] + group_choices
 
-  # Which group is currently selected?
-  selected_group = params[:kiosk_group].presence || all_key
+  # Which group is currently selected? (always default to all_key)
+  param_selected_group = params[:kiosk_group]
+  valid_option = dropdown_options.any? { |(_, val)| val == param_selected_group }
+  selected_group = valid_option ? param_selected_group : all_key
 
-  # Which sessions to show?
+  # Filter sessions for selected group
   sessions_to_show =
     if selected_group == "all_kiosks" && current_user.admin?
       sessions
     elsif selected_group == "all_my_kiosks"
-      sessions.select { |s| s.kiosk && current_user.kiosk_groups.include?(s.kiosk.kiosk_group) }
+      my_ids = current_user.kiosk_groups.pluck(:id)
+      sessions.select { |s| s.kiosk && my_ids.include?(s.kiosk.kiosk_group_id) }
     else
       group = available_groups.find { |g| g.id.to_s == selected_group }
       group ? sessions.select { |s| s.kiosk&.kiosk_group_id == group.id } : []
     end
 
-  # If nothing is selected, default to the group with the most sessions
-  if selected_group.blank? || !dropdown_options.any? { |(_, val)| val == selected_group }
-    counts = available_groups.each_with_object(Hash.new(0)) do |g, h|
-      h[g.id] = sessions.count { |s| s.kiosk&.kiosk_group_id == g.id }
-    end
-    most_sessions = counts.max_by { |_k, v| v }
-    selected_group = most_sessions ? most_sessions[0].to_s : all_key
-    # now recalc sessions_to_show
-    if selected_group == "all_kiosks" && current_user.admin?
-      sessions_to_show = sessions
-    elsif selected_group == "all_my_kiosks"
-      sessions_to_show = sessions.select { |s| s.kiosk && current_user.kiosk_groups.include?(s.kiosk.kiosk_group) }
-    else
-      group = available_groups.find { |g| g.id.to_s == selected_group }
-      sessions_to_show = group ? sessions.select { |s| s.kiosk&.kiosk_group_id == group.id } : []
-    end
-  end
-
-  # Group the sessions for display: kiosk → host
+  # Group by kiosk, then by host
   grouped = sessions_to_show.group_by { |s| s.kiosk&.name || s.kiosk_code }
     .transform_values { |kiosk_sessions| kiosk_sessions.group_by(&:host) }
 %>
