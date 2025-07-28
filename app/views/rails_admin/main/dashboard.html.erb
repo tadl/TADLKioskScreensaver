@@ -13,8 +13,8 @@
   </div>
 <% end %>
 
-<%# --- Date Range and Preset Buttons --- %>
 <%
+  # ----- Date and preset logic -----
   today        = Date.current
   last_30_days = (today - 29.days)..today
   curr_month   = today.beginning_of_month..today
@@ -22,36 +22,28 @@
   curr_year    = today.beginning_of_year..today
   prev_year    = today.last_year.beginning_of_year..today.last_year.end_of_year
 
-  # Parse date range from params or use default (last 30 days)
   start_date   = params[:start].present? ? Date.parse(params[:start]) : last_30_days.begin
   end_date     = params[:end].present?   ? Date.parse(params[:end])   : last_30_days.end
 
-  # Load sessions, eager load kiosk + group for efficiency
   sessions = KioskSession
     .includes(kiosk: :kiosk_group)
     .where(started_at: start_date.beginning_of_day..end_date.end_of_day)
 
-  # User's accessible kiosk groups
   accessible_groups = current_user.admin? ? KioskGroup.all : current_user.kiosk_groups
   accessible_groups = accessible_groups.order(:name)
-
-  # Only include groups that had sessions in range
   group_ids_with_sessions = sessions.map { |s| s.kiosk&.kiosk_group_id }.compact.uniq
   available_groups = accessible_groups.where(id: group_ids_with_sessions)
 
-  # "All Kiosks" or "All My Kiosks" dropdown option
   all_key   = current_user.admin? ? "all_kiosks" : "all_my_kiosks"
   all_label = current_user.admin? ? "All Kiosks" : "All My Kiosks"
 
   group_choices = available_groups.map { |g| [g.name, g.id.to_s] }
   dropdown_options = [[all_label, all_key]] + group_choices
 
-  # Which group is currently selected? (always default to all_key)
   param_selected_group = params[:kiosk_group]
   valid_option = dropdown_options.any? { |(_, val)| val == param_selected_group }
   selected_group = valid_option ? param_selected_group : all_key
 
-  # Filter sessions for selected group
   sessions_to_show =
     if selected_group == "all_kiosks" && current_user.admin?
       sessions
@@ -63,9 +55,17 @@
       group ? sessions.select { |s| s.kiosk&.kiosk_group_id == group.id } : []
     end
 
-  # Group by kiosk, then by host
-  grouped = sessions_to_show.group_by { |s| s.kiosk&.name || s.kiosk_code }
-    .transform_values { |kiosk_sessions| kiosk_sessions.group_by(&:host) }
+  # GROUPING
+  if selected_group == all_key
+    grouped = sessions_to_show.group_by { |s| s.kiosk&.kiosk_group }
+      .transform_values do |group_sessions|
+        group_sessions.group_by { |s| s.kiosk&.name || s.kiosk_code }
+          .transform_values { |kiosk_sessions| kiosk_sessions.group_by(&:host) }
+      end
+  else
+    grouped = sessions_to_show.group_by { |s| s.kiosk&.name || s.kiosk_code }
+      .transform_values { |kiosk_sessions| kiosk_sessions.group_by(&:host) }
+  end
 %>
 
 <div class="card mt-4">
@@ -83,7 +83,6 @@
       <%= select_tag :kiosk_group, options_for_select(dropdown_options, selected_group), class: "form-control mr-2", onchange: "this.form.submit();" %>
 
       <%= submit_tag "Apply", class: "btn btn-primary mr-2" %>
-
       <%= link_to "Last 30 Days", rails_admin.dashboard_path(start: last_30_days.begin, end: last_30_days.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
       <%= link_to "Current Month", rails_admin.dashboard_path(start: curr_month.begin, end: curr_month.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
       <%= link_to "Previous Month", rails_admin.dashboard_path(start: prev_month.begin, end: prev_month.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
@@ -92,35 +91,88 @@
     <% end %>
 
     <% if grouped.any? %>
-      <% grouped.each do |kiosk_name, hosts| %>
-        <div class="mt-4">
-          <h6 class="border-bottom pb-1"><%= kiosk_name %></h6>
-          <table class="table table-sm mb-4">
-            <thead>
-              <tr>
-                <th>Host</th>
-                <th>Sessions</th>
-                <th>First Session</th>
-                <th>Last Session</th>
-                <th>Avg Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% hosts.each do |host, host_sessions| %>
-                <tr>
-                  <td><%= host %></td>
-                  <td><%= host_sessions.count %></td>
-                  <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
-                  <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
-                  <td>
-                    <% durations = host_sessions.map(&:session_duration).compact %>
-                    <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
+      <% if selected_group == all_key %>
+        <div class="accordion" id="kioskGroupAccordion">
+          <% grouped.each_with_index do |(group, kiosks), i| %>
+            <% group_obj = group || OpenStruct.new(name: "No Group") %>
+            <% group_id = "kioskGroup#{i}" %>
+            <% group_session_count = kiosks.values.flat_map(&:values).flatten.size %>
+            <div class="accordion-item">
+              <h2 class="accordion-header" id="<%= "#{group_id}Header" %>">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#<%= group_id %>" aria-expanded="false" aria-controls="<%= group_id %>">
+                  <%= group_obj.name %> (<%= group_session_count %> sessions)
+                </button>
+              </h2>
+              <div id="<%= group_id %>" class="accordion-collapse collapse" aria-labelledby="<%= "#{group_id}Header" %>"
+                   data-bs-parent="#kioskGroupAccordion">
+                <div class="accordion-body">
+                  <% kiosks.each do |kiosk_name, hosts| %>
+                    <% kiosk_session_count = hosts.values.flatten.size %>
+                    <h6 class="mt-3"><%= kiosk_name %> (<%= kiosk_session_count %> sessions)</h6>
+                    <table class="table table-sm mb-4">
+                      <thead>
+                        <tr>
+                          <th>Host</th>
+                          <th>Sessions</th>
+                          <th>First Session</th>
+                          <th>Last Session</th>
+                          <th>Avg Duration</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% hosts.each do |host, host_sessions| %>
+                          <tr>
+                            <td><%= host %></td>
+                            <td><%= host_sessions.count %></td>
+                            <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
+                            <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
+                            <td>
+                              <% durations = host_sessions.map(&:session_duration).compact %>
+                              <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
+                            </td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
         </div>
+      <% else %>
+        <% grouped.each do |kiosk_name, hosts| %>
+          <% kiosk_session_count = hosts.values.flatten.size %>
+          <div class="mt-4">
+            <h6 class="border-bottom pb-1"><%= kiosk_name %> (<%= kiosk_session_count %> sessions)</h6>
+            <table class="table table-sm mb-4">
+              <thead>
+                <tr>
+                  <th>Host</th>
+                  <th>Sessions</th>
+                  <th>First Session</th>
+                  <th>Last Session</th>
+                  <th>Avg Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% hosts.each do |host, host_sessions| %>
+                  <tr>
+                    <td><%= host %></td>
+                    <td><%= host_sessions.count %></td>
+                    <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
+                    <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
+                    <td>
+                      <% durations = host_sessions.map(&:session_duration).compact %>
+                      <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% end %>
       <% end %>
     <% else %>
       <div class="mt-3">
