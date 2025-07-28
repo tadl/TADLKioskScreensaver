@@ -3,10 +3,23 @@ class ScreensaverController < ApplicationController
   # Don’t wrap these views in the application layout—render them “standalone”
   layout false
 
-  # GET  /?kiosk=<slug>
+  # GET  /?kiosk=<slug>&host=<hostname>
   def index
     # If no kiosk param, render the generic landing page
     return render(:landing) if params[:kiosk].blank?
+
+    # End session for this kiosk/host if both present
+    if params[:host].present?
+      session = KioskSession.where(
+        kiosk_code: params[:kiosk],
+        host: params[:host],
+        ended_at: nil
+      ).order(started_at: :desc).first
+
+      if session
+        session.update!(ended_at: Time.zone.now)
+      end
+    end
 
     # Look up the kiosk or 400
     @kiosk = Kiosk.find_by!(slug: params[:kiosk])
@@ -21,15 +34,14 @@ class ScreensaverController < ApplicationController
     @slides = active_slides.any? ? active_slides : Slide.fallbacks
     return render(:empty) if @slides.empty?
 
-#    @exit_url = @kiosk.catalog_url
     base      = request.base_url
     @exit_url = Rails.application.routes.url_helpers.exit_screensaver_url(
                   kiosk: @kiosk.slug,
+                  host: params[:host], # <-- Pass through host!
                   host: base
                 )
 
     # Build an array of slide data with URLs, durations, and titles
-    base = request.base_url
     @slide_data = @slides.map do |s|
       {
         url:      Rails.application.routes.url_helpers.rails_blob_url(s.image, host: base),
@@ -67,8 +79,29 @@ class ScreensaverController < ApplicationController
     render json: { slides: [] }, status: :bad_request
   end
 
+  # GET /exit?kiosk=<slug>&host=<hostname>
   def exit
-    kiosk = Kiosk.find_by(slug: params[:kiosk])
+    kiosk_code = params[:kiosk]
+    host = params[:host]
+
+    # Start a new session if both kiosk and host present and no open session
+    if kiosk_code.present? && host.present?
+      open_session = KioskSession.where(
+        kiosk_code: kiosk_code,
+        host: host,
+        ended_at: nil
+      ).order(started_at: :desc).first
+
+      unless open_session
+        KioskSession.create!(
+          kiosk_code: kiosk_code,
+          host: host,
+          started_at: Time.zone.now
+        )
+      end
+    end
+
+    kiosk = Kiosk.find_by(slug: kiosk_code)
     if kiosk
       redirect_to kiosk.catalog_url, allow_other_host: true
     else

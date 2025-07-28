@@ -27,8 +27,25 @@
     </div>
 
     <script>
+      // --- BEGIN Sticky Params Helper ---
+      window.kioskCode = "<%= params[:kiosk].to_s.gsub('"','') %>";
+      window.kioskHost = "<%= params[:host].to_s.gsub('"','') %>";
+
+      function stickyUrl(path) {
+        let url = path;
+        if (url.indexOf('?') === -1) {
+          url += '?kiosk=' + encodeURIComponent(window.kioskCode);
+        } else if (!/(\?|&)kiosk=/.test(url)) {
+          url += '&kiosk=' + encodeURIComponent(window.kioskCode);
+        }
+        if (window.kioskHost && !/(\?|&)host=/.test(url)) {
+          url += '&host=' + encodeURIComponent(window.kioskHost);
+        }
+        return url;
+      }
+      // --- END Sticky Params Helper ---
+
       document.addEventListener("DOMContentLoaded", () => {
-        const EXIT_URL         = "<%= j @exit_url %>";
         const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
 
         // Build initial slide list
@@ -67,7 +84,7 @@
         }
 
         // Exit handlers: click, mousemove, keydown (after 2s)
-        function exit() { window.location = EXIT_URL; }
+        function exit() { window.location = stickyUrl("/exit"); }
         setTimeout(() => {
           document.addEventListener("click",     exit, { once: true });
           document.addEventListener("mousemove", exit, { once: true });
@@ -82,7 +99,7 @@
         // Periodic JSON refresh
         setInterval(async () => {
           try {
-            const res = await fetch(`/slides.json?kiosk=<%= j params[:kiosk] %>`);
+            const res = await fetch(stickyUrl("/slides.json"));
             if (!res.ok) throw new Error(res.statusText);
             const { slides: updated } = await res.json();
             if (Array.isArray(updated) && updated.length) {

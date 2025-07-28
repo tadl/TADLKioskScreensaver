@@ -47,12 +47,25 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.string "slug", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "location_shortname"
+    t.index ["location_shortname"], name: "index_kiosk_groups_on_location_shortname"
     t.index ["slug"], name: "index_kiosk_groups_on_slug", unique: true
   end
 
   create_table "kiosk_groups_user_permissions", id: false, force: :cascade do |t|
     t.bigint "user_permission_id", null: false
     t.bigint "kiosk_group_id", null: false
+  end
+
+  create_table "kiosk_sessions", force: :cascade do |t|
+    t.string "kiosk_code", null: false
+    t.string "host"
+    t.datetime "started_at", null: false
+    t.datetime "ended_at"
+    t.integer "slide_fetch_count", default: 0
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kiosk_code", "host", "started_at"], name: "index_kiosk_sessions_on_kiosk_code_and_host_and_started_at"
   end
 
   create_table "kiosks", force: :cascade do |t|
