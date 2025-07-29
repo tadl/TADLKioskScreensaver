@@ -98,7 +98,7 @@
       <% if selected_group == all_key %>
         <div class="accordion" id="kioskGroupAccordion">
           <% grouped.each_with_index do |(group, kiosks), i| %>
-            <% group_obj = group || OpenStruct.new(name: "No Group") %>
+            <% group_obj = group || OpenStruct.new(name: "No Group", slug: nil) %>
             <% group_id = "kioskGroup#{i}" %>
             <% group_session_count = kiosks.values.flat_map(&:values).flatten.size %>
             <div class="accordion-item">
@@ -122,18 +122,35 @@
                           <th>First Session</th>
                           <th>Last Session</th>
                           <th>Avg Duration</th>
+                          <th>Total Minutes</th>
                         </tr>
                       </thead>
                       <tbody>
                         <% hosts.each do |host, host_sessions| %>
+                          <% durations = host_sessions.map(&:session_duration).compact %>
+                          <% total_min = durations.any? ? (durations.sum / 60.0) : 0 %>
+                          <% # Utilization badge logic %>
+                          <% location = group_obj.slug && location_for_group_slug(group_obj.slug) %>
+                          <% open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil %>
+                          <% util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil %>
                           <tr>
-                            <td><%= host %></td>
+                            <td>
+                              <%= host %>
+                              <% if util_pct %>
+                                <span class="badge bg-dark ml-1"
+                                  title="Utilization: <%= total_min.round(1) %> of <%= open_min %> min">
+                                  <%= util_pct %>% utilized
+                                </span>
+                              <% end %>
+                            </td>
                             <td><%= host_sessions.count %></td>
                             <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
                             <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
                             <td>
-                              <% durations = host_sessions.map(&:session_duration).compact %>
                               <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
+                            </td>
+                            <td>
+                              <%= durations.any? ? total_min.round(1) : "-" %>
                             </td>
                           </tr>
                         <% end %>
@@ -158,18 +175,37 @@
                   <th>First Session</th>
                   <th>Last Session</th>
                   <th>Avg Duration</th>
+                  <th>Total Minutes</th>
                 </tr>
               </thead>
               <tbody>
                 <% hosts.each do |host, host_sessions| %>
+                  <% durations = host_sessions.map(&:session_duration).compact %>
+                  <% total_min = durations.any? ? (durations.sum / 60.0) : 0 %>
+                  <% # Utilization badge logic %>
+                  <% kiosk_obj = host_sessions.first.kiosk %>
+                  <% group_obj = kiosk_obj&.kiosk_group %>
+                  <% location = group_obj&.slug && location_for_group_slug(group_obj.slug) %>
+                  <% open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil %>
+                  <% util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil %>
                   <tr>
-                    <td><%= host %></td>
+                    <td>
+                      <%= host %>
+                      <% if util_pct %>
+                        <span class="badge bg-dark ml-1"
+                          title="Utilization: <%= total_min.round(1) %> of <%= open_min %> min">
+                          <%= util_pct %>% utilized
+                        </span>
+                      <% end %>
+                    </td>
                     <td><%= host_sessions.count %></td>
                     <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
                     <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
                     <td>
-                      <% durations = host_sessions.map(&:session_duration).compact %>
                       <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
+                    </td>
+                    <td>
+                      <%= durations.any? ? total_min.round(1) : "-" %>
                     </td>
                   </tr>
                 <% end %>
