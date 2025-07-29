@@ -126,10 +126,9 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <% hosts.each do |host, host_sessions| %>
+                        <% hosts.sort.each do |host, host_sessions| %>
                           <% durations = host_sessions.map(&:session_duration).compact %>
                           <% total_min = durations.any? ? (durations.sum / 60.0) : 0 %>
-                          <% # Utilization badge logic %>
                           <% location = group_obj.slug && location_for_group_slug(group_obj.slug) %>
                           <% open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil %>
                           <% util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil %>
@@ -179,10 +178,9 @@
                 </tr>
               </thead>
               <tbody>
-                <% hosts.each do |host, host_sessions| %>
+                <% hosts.sort.each do |host, host_sessions| %>
                   <% durations = host_sessions.map(&:session_duration).compact %>
                   <% total_min = durations.any? ? (durations.sum / 60.0) : 0 %>
-                  <% # Utilization badge logic %>
                   <% kiosk_obj = host_sessions.first.kiosk %>
                   <% group_obj = kiosk_obj&.kiosk_group %>
                   <% location = group_obj&.slug && location_for_group_slug(group_obj.slug) %>
