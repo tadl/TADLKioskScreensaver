@@ -17,7 +17,7 @@
   # ----- Date and preset logic -----
   today        = Date.current
   yesterday    = (today - 1.day)..(today - 1.day)
-  past_7_days  = (today - 6.days)..today
+  last_7_days  = (today - 6.days)..today
   last_30_days = (today - 29.days)..today
   curr_month   = today.beginning_of_month..today
   prev_month   = (today - 1.month).beginning_of_month..(today - 1.month).end_of_month
