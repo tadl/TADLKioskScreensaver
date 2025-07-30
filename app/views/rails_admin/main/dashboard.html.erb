@@ -85,13 +85,41 @@
       <%= select_tag :kiosk_group, options_for_select(dropdown_options, selected_group), class: "form-control mr-2", onchange: "this.form.submit();" %>
 
       <%= submit_tag "Apply", class: "btn btn-primary mr-2" %>
-      <%= link_to "Yesterday", rails_admin.dashboard_path(start: yesterday.begin, end: yesterday.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Last 7 Days", rails_admin.dashboard_path(start: last_7_days.begin, end: last_7_days.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Last 30 Days", rails_admin.dashboard_path(start: last_30_days.begin, end: last_30_days.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Current Month", rails_admin.dashboard_path(start: curr_month.begin, end: curr_month.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Previous Month", rails_admin.dashboard_path(start: prev_month.begin, end: prev_month.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Current Year", rails_admin.dashboard_path(start: curr_year.begin, end: curr_year.end), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Previous Year", rails_admin.dashboard_path(start: prev_year.begin, end: prev_year.end), class: "btn btn-outline-secondary btn-sm" %>
+      <%= link_to "Yesterday", rails_admin.dashboard_path(
+            start: yesterday.begin,
+            end: yesterday.end,
+            kiosk_group: params[:kiosk_group].presence
+          ), class: "btn btn-outline-secondary btn-sm mr-1" %>
+      <%= link_to "Last 7 Days", rails_admin.dashboard_path(
+            start: last_7_days.begin,
+            end: last_7_days.end,
+            kiosk_group: params[:kiosk_group].presence
+          ), class: "btn btn-outline-secondary btn-sm mr-1" %>
+      <%= link_to "Last 30 Days", rails_admin.dashboard_path(
+            start: last_30_days.begin,
+            end: last_30_days.end,
+            kiosk_group: params[:kiosk_group].presence
+          ), class: "btn btn-outline-secondary btn-sm mr-1" %>
+      <%= link_to "Current Month", rails_admin.dashboard_path(
+            start: curr_month.begin,
+            end: curr_month.end,
+            kiosk_group: params[:kiosk_group].presence
+          ), class: "btn btn-outline-secondary btn-sm mr-1" %>
+      <%= link_to "Previous Month", rails_admin.dashboard_path(
+            start: prev_month.begin,
+            end: prev_month.end,
+            kiosk_group: params[:kiosk_group].presence
+          ), class: "btn btn-outline-secondary btn-sm mr-1" %>
+      <%= link_to "Current Year", rails_admin.dashboard_path(
+            start: curr_year.begin,
+            end: curr_year.end,
+            kiosk_group: params[:kiosk_group].presence
+          ), class: "btn btn-outline-secondary btn-sm mr-1" %>
+      <%= link_to "Previous Year", rails_admin.dashboard_path(
+            start: prev_year.begin,
+            end: prev_year.end,
+            kiosk_group: params[:kiosk_group].presence
+          ), class: "btn btn-outline-secondary btn-sm" %>
     <% end %>
 
     <% if grouped.any? %>
