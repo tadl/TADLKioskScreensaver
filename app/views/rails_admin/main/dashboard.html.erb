@@ -121,6 +121,7 @@
                           <th>Sessions</th>
                           <th>First Session</th>
                           <th>Last Session</th>
+                          <th>Utilization</th>
                           <th>Avg Duration</th>
                           <th>Total Minutes</th>
                         </tr>
@@ -133,18 +134,13 @@
                           <% open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil %>
                           <% util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil %>
                           <tr>
-                            <td>
-                              <%= host %>
-                              <% if util_pct %>
-                                <span class="badge bg-dark ml-1"
-                                  title="Utilization: <%= total_min.round(1) %> of <%= open_min %> min">
-                                  <%= util_pct %>% utilized
-                                </span>
-                              <% end %>
-                            </td>
+                            <td><%= host %></td>
                             <td><%= host_sessions.count %></td>
                             <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
                             <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
+                            <td>
+                              <%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %>
+                            </td>
                             <td>
                               <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
                             </td>
@@ -173,6 +169,7 @@
                   <th>Sessions</th>
                   <th>First Session</th>
                   <th>Last Session</th>
+                  <th>Utilization</th>
                   <th>Avg Duration</th>
                   <th>Total Minutes</th>
                 </tr>
@@ -187,18 +184,13 @@
                   <% open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil %>
                   <% util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil %>
                   <tr>
-                    <td>
-                      <%= host %>
-                      <% if util_pct %>
-                        <span class="badge bg-dark ml-1"
-                          title="Utilization: <%= total_min.round(1) %> of <%= open_min %> min">
-                          <%= util_pct %>% utilized
-                        </span>
-                      <% end %>
-                    </td>
+                    <td><%= host %></td>
                     <td><%= host_sessions.count %></td>
                     <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
                     <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
+                    <td>
+                      <%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %>
+                    </td>
                     <td>
                       <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
                     </td>
