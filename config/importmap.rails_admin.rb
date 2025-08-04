@@ -12,3 +12,5 @@ pin "jquery-ui/ui/widgets/sortable",     to: "https://ga.jspm.io/npm:jquery-ui@1
 pin "jquery-ui/ui/widgets/autocomplete", to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/widgets/autocomplete.js"
 pin "jquery-ui/ui/widget",               to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/widget.js"
 pin "jquery-ui/ui/effect",               to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/effect.js"
+pin "jquery-ui/ui/version",     to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/version.js"
+pin "jquery-ui/ui/version.js",  to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/version.js"
