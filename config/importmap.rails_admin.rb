@@ -14,3 +14,5 @@ pin "jquery-ui/ui/widget",               to: "https://ga.jspm.io/npm:jquery-ui@1
 pin "jquery-ui/ui/effect",               to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/effect.js"
 pin "jquery-ui/ui/version",     to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/version.js"
 pin "jquery-ui/ui/version.js",  to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/version.js"
+pin "jquery-ui/ui/keycode",     to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/keycode.js"
+pin "jquery-ui/ui/keycode.js",  to: "https://ga.jspm.io/npm:jquery-ui@1.13.3/ui/keycode.js"
