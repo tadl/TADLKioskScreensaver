@@ -38,12 +38,15 @@ module ApplicationHelper
   def parse_open_minutes(hours_str)
     return 0 if hours_str.blank? || hours_str.downcase.include?('closed')
     start_time, end_time = hours_str.split(' to ')
-    return 0 unless start_time && end_time
+    # Fix "Noon" for parsing
+    start_time = start_time.gsub(/\bNoon\b/i, "12:00 PM") if start_time
+    end_time   = end_time.gsub(/\bNoon\b/i, "12:00 PM") if end_time
     t1 = Time.zone.parse(start_time)
     t2 = Time.zone.parse(end_time)
     return 0 unless t1 && t2
     ((t2 - t1) / 60).to_i
-  rescue
+  rescue => e
+    Rails.logger.warn("ERROR parse_open_minutes(#{hours_str.inspect}): #{e}")
     0
   end
 end
