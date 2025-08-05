@@ -2,14 +2,13 @@
 
 require 'omniauth'
 require 'omniauth-google-oauth2'
+require 'omniauth/rails_csrf_protection'
 
 if Rails.env.production?
   OmniAuth.config.full_host = 'https://kiosks.tadl.org'
 end
 
-# Re-enable GET (and silence the warning)
-OmniAuth.config.allowed_request_methods = %i[get post]
-OmniAuth.config.silence_get_warning    = true
+OmniAuth.config.allowed_request_methods = [:post]
 
 Rails.application.config.middleware.use OmniAuth::Builder do
   google_id     = ENV['GOOGLE_CLIENT_ID']

@@ -6,7 +6,7 @@ RailsAdmin.config do |config|
 
   # == Authentication ==
   config.authenticate_with do
-    redirect_to main_app.sign_in_path unless user_signed_in?
+    redirect_to main_app.login_path unless user_signed_in?
   end
   config.current_user_method(&:current_user)
 

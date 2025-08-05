@@ -1,0 +1,8 @@
+<main class="dashboard container mx-auto py-0">
+  <h2 class="mb-3">Staff Login Required</h2>
+  <p class="mb-4">Please sign in with your staff Google account.</p>
+  <form action="/auth/google_oauth2" method="post" data-turbo="false">
+    <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+    <button type="submit" class="btn btn-primary btn-lg">Sign in with Google</button>
+  </form>
+</main>

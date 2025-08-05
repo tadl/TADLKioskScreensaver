@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
-  get    '/sign_in',  to: 'sessions#new',     as: :sign_in
-  match  '/sign_out', to: 'sessions#destroy', as: :sign_out, via: [:get, :delete]
+  get    '/login',  to: 'sessions#new',     as: :login
+  delete  '/logout', to: 'sessions#destroy', as: :logout
   get '/auth/:provider/callback', to: 'sessions#create'
 
   mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
