@@ -24,8 +24,28 @@
   curr_year    = today.beginning_of_year..today
   prev_year    = today.last_year.beginning_of_year..today.last_year.end_of_year
 
+  # Current range (fallback to last 30)
   start_date   = params[:start].present? ? Date.parse(params[:start]) : last_30_days.begin
   end_date     = params[:end].present?   ? Date.parse(params[:end])   : last_30_days.end
+
+  presets = {
+    "today"          => (today..today),
+    "yesterday"      => yesterday,
+    "last_7_days"    => last_7_days,
+    "last_30_days"   => last_30_days,
+    "current_month"  => curr_month,
+    "previous_month" => prev_month,
+    "current_year"   => curr_year,
+    "previous_year"  => prev_year
+  }
+
+  # Detect current preset (or custom)
+  param_preset     = params[:preset_range].presence
+  detected_preset  = presets.find { |_k, r| r.begin == start_date && r.end == end_date }&.first
+  selected_preset  = param_preset || detected_preset || "custom"
+
+  # tiny helper for dropdown values
+  def range_value(r) = "#{r.begin}|#{r.end}"
 
   sessions = KioskSession
     .includes(kiosk: :kiosk_group)
@@ -76,24 +96,101 @@
     <h5 class="mb-0">Kiosk Usage (<%= start_date.strftime("%Y-%m-%d") %> to <%= end_date.strftime("%Y-%m-%d") %>)</h5>
   </div>
   <div class="card-body">
-    <%= form_with url: rails_admin.dashboard_path, method: :get, local: true, class: "form-inline mb-2" do %>
-      <label class="mr-2 font-weight-bold">Start:</label>
-      <%= date_field_tag :start, start_date, class: "form-control mr-2" %>
-      <label class="mr-2 font-weight-bold">End:</label>
-      <%= date_field_tag :end, end_date, class: "form-control mr-2" %>
-
+    <%= form_with url: rails_admin.dashboard_path, method: :get, local: true, class: "form-inline mb-2", id: "filtersForm" do %>
       <label class="mr-2 font-weight-bold">Kiosk Group:</label>
-      <%= select_tag :kiosk_group, options_for_select(dropdown_options, selected_group), class: "form-control mr-2", onchange: "this.form.submit();" %>
+      <%= select_tag :kiosk_group,
+            options_for_select(dropdown_options, selected_group),
+            class: "form-control mr-3",
+            onchange: "this.form.requestSubmit();" %>
 
-      <%= submit_tag "Apply", class: "btn btn-primary mr-2" %>
-      <%= link_to "Yesterday", rails_admin.dashboard_path(start: yesterday.begin, end: yesterday.end, kiosk_group: params[:kiosk_group].presence), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Last 7 Days", rails_admin.dashboard_path(start: last_7_days.begin, end: last_7_days.end, kiosk_group: params[:kiosk_group].presence), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Last 30 Days", rails_admin.dashboard_path(start: last_30_days.begin, end: last_30_days.end, kiosk_group: params[:kiosk_group].presence), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Current Month", rails_admin.dashboard_path(start: curr_month.begin, end: curr_month.end, kiosk_group: params[:kiosk_group].presence), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Previous Month", rails_admin.dashboard_path(start: prev_month.begin, end: prev_month.end, kiosk_group: params[:kiosk_group].presence), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Current Year", rails_admin.dashboard_path(start: curr_year.begin, end: curr_year.end, kiosk_group: params[:kiosk_group].presence), class: "btn btn-outline-secondary btn-sm mr-1" %>
-      <%= link_to "Previous Year", rails_admin.dashboard_path(start: prev_year.begin, end: prev_year.end, kiosk_group: params[:kiosk_group].presence), class: "btn btn-outline-secondary btn-sm" %>
+      <label class="mr-2 font-weight-bold">Date Range:</label>
+      <%= select_tag :preset_range,
+            options_for_select([
+              ['Today',            "today:#{range_value(presets['today'])}"],
+              ['Yesterday',        "yesterday:#{range_value(presets['yesterday'])}"],
+              ['Last 7 Days',      "last_7_days:#{range_value(presets['last_7_days'])}"],
+              ['Last 30 Days',     "last_30_days:#{range_value(presets['last_30_days'])}"],
+              ['Current Month',    "current_month:#{range_value(presets['current_month'])}"],
+              ['Previous Month',   "previous_month:#{range_value(presets['previous_month'])}"],
+              ['Current Year',     "current_year:#{range_value(presets['current_year'])}"],
+              ['Previous Year',    "previous_year:#{range_value(presets['previous_year'])}"],
+              ['Custom…',          "custom:"]
+            ].map { |label, val|
+              key = val.split(':',2).first
+              [label, val, { selected: (key == selected_preset) }]
+            }),
+            class: "form-control mr-3",
+            id: "presetRange",
+            onchange: "applyPresetRange(this)" %>
+
+      <span id="customDates" style="<%= selected_preset == 'custom' ? '' : 'display:none' %>">
+        <label class="mr-2 font-weight-bold">Start:</label>
+        <%= date_field_tag :start, start_date, class: "form-control mr-2" %>
+        <label class="mr-2 font-weight-bold">End:</label>
+        <%= date_field_tag :end, end_date, class: "form-control mr-2" %>
+        <%= submit_tag "Apply", class: "btn btn-primary" %>
+      </span>
     <% end %>
+
+    <script>
+      function applyPresetRange(select) {
+        const form = document.getElementById('filtersForm');
+        const custom = document.getElementById('customDates');
+        const [key, pair] = (select.value || '').split(':', 2);
+
+        // Keep preset in params
+        const hidden = ensureHidden(form, 'preset_range');
+        hidden.value = key;
+
+        if (key === 'custom') {
+          custom.style.display = '';
+          return;
+        }
+
+        custom.style.display = 'none';
+        const [start, end] = (pair || '').split('|');
+        setInputValue(form, 'start', start);
+        setInputValue(form, 'end', end);
+        form.requestSubmit();
+      }
+
+      function setInputValue(form, name, val) {
+        let input = form.querySelector(`[name="${name}"]`);
+        if (!input) {
+          input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          form.appendChild(input);
+        }
+        input.value = val;
+      }
+
+      function ensureHidden(form, name) {
+        let input = form.querySelector(`input[type="hidden"][name="${name}"]`);
+        if (!input) {
+          input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          form.appendChild(input);
+        }
+        return input;
+      }
+
+      document.addEventListener('turbo:load', syncCustomDatesVisibility);
+      document.addEventListener('DOMContentLoaded', syncCustomDatesVisibility);
+      function syncCustomDatesVisibility() {
+        const select = document.getElementById('presetRange');
+        if (!select) return;
+        const key = (select.value || '').split(':', 1)[0];
+        const custom = document.getElementById('customDates');
+        if (custom) custom.style.display = (key === 'custom') ? '' : 'none';
+        const form = document.getElementById('filtersForm');
+        if (form) {
+          const hidden = ensureHidden(form, 'preset_range');
+          hidden.value = key;
+        }
+      }
+    </script>
 
     <% if grouped.any? %>
       <% if selected_group == all_key %>
@@ -103,7 +200,7 @@
             <% group_id = "kioskGroup#{i}" %>
             <% group_session_count = kiosks.values.flat_map(&:values).flatten.size %>
             <% sessions_flat = kiosks.values.flat_map(&:values).flatten %>
-            <%# --- Chart Data (per day or per hour) --- %>
+            <%# --- Chart Data --- %>
             <% if single_day %>
               <% hours = (0..23).to_a %>
               <% hour_counts = hours.map { |h| sessions_flat.count { |s| s.started_at.hour == h && s.started_at.to_date == start_date } } %>
@@ -132,7 +229,6 @@
                     document.addEventListener('turbo:load', function() {
                       var ctx = document.getElementById('chart-<%= group_id %>');
                       if (ctx) {
-                        // Avoid duplicate charts
                         if (ctx.chartInstance) { ctx.chartInstance.destroy(); }
                         ctx.chartInstance = new Chart(ctx, {
                           type: 'line',
@@ -185,15 +281,9 @@
                             <td><%= host_sessions.count %></td>
                             <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
                             <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
-                            <td>
-                              <%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %>
-                            </td>
-                            <td>
-                              <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
-                            </td>
-                            <td>
-                              <%= durations.any? ? total_min.round(1) : "-" %>
-                            </td>
+                            <td><%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %></td>
+                            <td><%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %></td>
+                            <td><%= durations.any? ? total_min.round(1) : "-" %></td>
                           </tr>
                         <% end %>
                       </tbody>
@@ -207,7 +297,6 @@
       <% else %>
         <% grouped.each_with_index do |(kiosk_name, hosts), k| %>
           <% kiosk_session_count = hosts.values.flatten.size %>
-          <% # Per-kiosk chart %>
           <% kiosk_sessions = hosts.values.flatten %>
           <% if single_day %>
             <% hours = (0..23).to_a %>
@@ -228,10 +317,7 @@
               document.addEventListener('turbo:load', function() {
                 var ctx = document.getElementById('chart-kiosk-<%= k %>');
                 if (ctx) {
-                  // If a previous chart exists on this canvas, destroy it first
-                  if (ctx.chartInstance) {
-                    ctx.chartInstance.destroy();
-                  }
+                  if (ctx.chartInstance) { ctx.chartInstance.destroy(); }
                   ctx.chartInstance = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -283,15 +369,9 @@
                     <td><%= host_sessions.count %></td>
                     <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
                     <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
-                    <td>
-                      <%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %>
-                    </td>
-                    <td>
-                      <%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %>
-                    </td>
-                    <td>
-                      <%= durations.any? ? total_min.round(1) : "-" %>
-                    </td>
+                    <td><%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %></td>
+                    <td><%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %></td>
+                    <td><%= durations.any? ? total_min.round(1) : "-" %></td>
                   </tr>
                 <% end %>
               </tbody>
