@@ -75,3 +75,5 @@ gem 'omniauth-rails_csrf_protection'
 gem "cancancan"
 
 gem 'bootstrap', '~> 5.3'
+
+gem "fastimage"

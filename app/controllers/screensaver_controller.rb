@@ -34,12 +34,10 @@ class ScreensaverController < ApplicationController
     @slides = active_slides.any? ? active_slides : Slide.fallbacks
     return render(:empty) if @slides.empty?
 
-    base      = request.base_url
-    @exit_url = Rails.application.routes.url_helpers.exit_screensaver_url(
-                  kiosk: @kiosk.slug,
-                  host: params[:host], # <-- Pass through host!
-                  host: base
-                )
+    base        = request.base_url
+    params_hash = { kiosk: @kiosk.slug, host: params[:host] } # host here is the query param
+    @exit_url   = Rails.application.routes.url_helpers
+                   .exit_screensaver_url(params_hash, host: request.base_url)
 
     # Build an array of slide data with URLs, durations, and titles
     @slide_data = @slides.map do |s|

@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
-  <body class="rails_admin">
+  <body class="rails_admin" data-turbo="false">
+    <script>
+      // Ensure any forms RailsAdmin renders are NOT submitted by Turbo
+      document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('form').forEach(function(f) {
+          f.setAttribute('data-turbo', 'false');
+        });
+      });
+    </script>
+
     <div data-i18n-options="<%= I18n.t("admin.js").to_json %>" id="admin-js"></div>
     <div class="badge bg-warning" id="loading" style="display:none; position:fixed; right:20px; bottom:20px; z-index:100000">
       <%= t('admin.loading') %>

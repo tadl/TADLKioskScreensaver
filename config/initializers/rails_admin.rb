@@ -17,6 +17,33 @@ RailsAdmin.config do |config|
   config.main_app_name   = ['Kiosk Screensaver', 'Admin']
   config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
 
+  preview_thumb = lambda do |obj, view, size|
+    return '-' unless obj.respond_to?(:image_attachment)
+
+    blob = obj.image_attachment&.blob
+    return '-' unless blob&.persisted?
+
+    thumb_source = blob.variable? ? obj.image.variant(resize_to_limit: [size, size]).processed : obj.image
+
+    begin
+      thumb_url = Rails.application.routes.url_helpers.rails_representation_url(
+        thumb_source, host: view.request.base_url
+      )
+    rescue
+      thumb_url = Rails.application.routes.url_helpers.url_for(thumb_source)
+    end
+
+    full_url = Rails.application.routes.url_helpers.rails_blob_url(blob, host: view.request.base_url)
+
+    view.link_to(full_url, target: '_blank', rel: 'noopener', data: { turbo: false }) do
+      view.image_tag(
+        thumb_url,
+        alt: (obj.try(:title).presence || blob.filename.to_s),
+        style: 'max-width:100px; height:auto; display:block;'
+      )
+    end
+  end
+
   # == Actions ==
   config.actions do
     dashboard
@@ -48,9 +75,7 @@ RailsAdmin.config do |config|
   # == Permission ==
   config.model 'Permission' do
     navigation_label 'Admin'
-    visible do
-      bindings[:controller].current_user.admin?
-    end
+    visible { bindings[:controller].current_user.admin? }
   end
 
   # == UserPermission ==
@@ -60,16 +85,14 @@ RailsAdmin.config do |config|
     label_plural     'Users'
     object_label_method :rails_admin_label
 
-    visible do
-      bindings[:controller].current_ability.can?(:manage, UserPermission)
-    end
+    visible { bindings[:controller].current_ability.can?(:manage, UserPermission) }
 
     list do
       field :user do
         label 'User'
         sortable 'users.email'
         pretty_value do
-          user = bindings[:object].user
+          user  = bindings[:object].user
           local = user.email.split('@').first
           name  = user.full_name.presence || user.email
           "#{name} (#{local})"
@@ -77,31 +100,20 @@ RailsAdmin.config do |config|
       end
       field :permission
       field :kiosk_groups do
-        pretty_value do
-          bindings[:object].kiosk_groups.map(&:name).join(', ')
-        end
+        pretty_value { bindings[:object].kiosk_groups.map(&:name).join(', ') }
       end
     end
 
     create do
-      field :user do
-        help 'Pick the Google-OAuth user to grant a role to.'
-      end
+      field(:user)          { help 'Pick the Google-OAuth user to grant a role to.' }
       field :permission
-      field :kiosk_groups do
-        help 'Select which kiosk groups this user may manage.'
-      end
+      field(:kiosk_groups)  { help 'Select which kiosk groups this user may manage.' }
     end
 
     edit do
-      field :user do
-        read_only true
-        help      'Users are managed via Google OAuth; you cannot change this here.'
-      end
+      field(:user)          { read_only true; help 'Users are managed via Google OAuth; you cannot change this here.' }
       field :permission
-      field :kiosk_groups do
-        help 'Select which kiosk groups this user may manage.'
-      end
+      field(:kiosk_groups)  { help 'Select which kiosk groups this user may manage.' }
     end
   end
 
@@ -135,17 +147,13 @@ RailsAdmin.config do |config|
     create do
       field :name
       field :slug
-      field :kiosks do
-        help 'Assign existing kiosks to this group.'
-      end
+      field(:kiosks) { help 'Assign existing kiosks to this group.' }
     end
 
     edit do
       field :name
       field :slug
-      field :kiosks do
-        help 'Update which kiosks belong to this group.'
-      end
+      field(:kiosks) { help 'Update which kiosks belong to this group.' }
     end
   end
 
@@ -160,10 +168,12 @@ RailsAdmin.config do |config|
       register_instance_option :scoped_collection do
         user  = bindings[:controller].current_user
         model = bindings[:abstract_model].model
-        user.admin? ? model.all : model.where(kiosk_group_id: user.kiosk_group_ids)
+        scope = user.admin? ? model.all : model.where(kiosk_group_id: user.kiosk_group_ids)
+        scope.includes(:kiosk_group)
       end
 
       field :name
+
       field :slug do
         label 'Slug'
         pretty_value do
@@ -172,14 +182,16 @@ RailsAdmin.config do |config|
           bindings[:view].link_to(
             slug,
             "#{base}/?kiosk=#{slug}",
-            target: "_blank",
-            rel: "noopener"
+            target: '_blank',
+            rel: 'noopener'
           )
         end
       end
+
       field :catalog_url
       field :location
       field :kiosk_group
+
       field :slides_count do
         label      'Slides Count'
         sortable   :slides_count
@@ -192,9 +204,7 @@ RailsAdmin.config do |config|
       field :slug
       field :catalog_url
       field :location do
-        read_only do
-          !bindings[:controller].current_ability.can?(:update, bindings[:object])
-        end
+        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
       end
       field :kiosk_group
       field :slides do
@@ -212,9 +222,7 @@ RailsAdmin.config do |config|
 
     edit do
       field :slides do
-        read_only do
-          !bindings[:controller].current_ability.can?(:update, bindings[:object])
-        end
+        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
         help 'Only slides at exactly 1920×1080 are available here.'
         associated_collection_scope do
           Proc.new do |scope|
@@ -227,43 +235,39 @@ RailsAdmin.config do |config|
       end
 
       field :location do
-        read_only do
-          !bindings[:controller].current_ability.can?(:manage, bindings[:object])
-        end
+        read_only { !bindings[:controller].current_ability.can?(:manage, bindings[:object]) }
       end
 
       %i[name slug catalog_url kiosk_group].each do |f|
-        field f do
-          visible false
-        end
+        field(f) { visible false }
       end
     end
+
     show do
       field :name
       field :location
       field :slides do
         label 'Slides'
         pretty_value do
-          base = bindings[:view].request.base_url
+          view   = bindings[:view]
           slides = bindings[:object].slides
           thumbs = slides.map do |slide|
-            variant = slide.image.variant(resize_to_limit: [150, 150]).processed
-            thumb_url = Rails.application.routes.url_helpers.rails_representation_url(
-              variant,
-              host: base
-            )
-            full_url  = Rails.application.routes.url_helpers.rails_blob_url(
-              slide.image,
-              host: base
-            )
-            bindings[:view].link_to(full_url, target: '_blank', rel: 'noopener') do
-              bindings[:view].tag.div(style: 'display:inline-block; margin:5px; text-align:center;') do
-                bindings[:view].tag.img(
-                  src: thumb_url,
-                  style: 'max-width:150px; max-height:150px;'
-                ) +
-                bindings[:view].tag.br +
-                bindings[:view].tag.span(slide.title)
+            att  = slide.image_attachment
+            blob = att&.blob
+            next '' unless att && blob && blob.key.present?
+
+            src = (blob.respond_to?(:variable?) && blob.variable?) ?
+              slide.image.variant(resize_to_limit: [150, 150]).processed :
+              slide.image
+
+            thumb_url = view.main_app.url_for(src)
+            full_url  = view.main_app.url_for(slide.image)
+
+            view.link_to(full_url, target: '_blank', rel: 'noopener') do
+              view.tag.div(style: 'display:inline-block; margin:5px; text-align:center;') do
+                view.tag.img(src: thumb_url, style: 'max-width:150px; max-height:150px;') +
+                view.tag.br +
+                view.tag.span(slide.title)
               end
             end
           end
@@ -289,28 +293,14 @@ RailsAdmin.config do |config|
         'error' if md['width'] != 1920 || md['height'] != 1080
       end
 
-      field :image do
+      field :image, :string do
         label    'Preview'
         sortable false
-        formatted_value do
-          slide = bindings[:object]
-          if slide.image.attached?
-            thumb = slide.image.variant(resize_to_limit: [100, 100]).processed
-            url   = Rails.application.routes.url_helpers.rails_representation_url(
-                     thumb,
-                     host: bindings[:view].request.base_url
-                   )
-            bindings[:view].tag.img(src: url, width: 100, height: 100)
-          else
-            '-'
-          end
-        end
+        pretty_value { preview_thumb.call(bindings[:object], bindings[:view], 100) }
       end
 
       field :title
-      field :display_seconds do
-        label 'Display time'
-      end
+      field(:display_seconds) { label 'Display time' }
       field :start_date
       field :end_date
 
@@ -318,11 +308,7 @@ RailsAdmin.config do |config|
         label 'Fallback?'
         sortable true
         filterable true
-        pretty_value do
-          if bindings[:object].fallback?
-            '<span class="text-success">&#10003;</span>'.html_safe
-          end
-        end
+        pretty_value { bindings[:object].fallback? ? '<span class="text-success">&#10003;</span>'.html_safe : nil }
       end
 
       field :image_metadata do
@@ -330,53 +316,68 @@ RailsAdmin.config do |config|
         pretty_value do
           md = bindings[:object].image_metadata
           w, h = md['width'], md['height']
-          if w == 1920 && h == 1080
-            text = '<span class="text-success">✓</span>'
-          else
-            text = '<span class="text-danger font-weight-bold">✕</span>'
-          end
-          text.html_safe
+          (w == 1920 && h == 1080 ?
+            '<span class="text-success">✓</span>' :
+            '<span class="text-danger font-weight-bold">✕</span>').html_safe
         end
       end
 
-      field :kiosks do
-        label    'Assigned Kiosks'
-        sortable false
+      field(:kiosks) { label 'Assigned Kiosks'; sortable false }
+    end
+
+    show do
+      field :image, :string do
+        label 'Preview'
+        pretty_value { preview_thumb.call(bindings[:object], bindings[:view], 300) }
       end
+      field :title
+      field :link
+      field :display_seconds
+      field :start_date
+      field :end_date
+      field :fallback
+      field :kiosks
+      field :created_at
+      field :updated_at
+
+      configure(:image_attachment) { visible false }
+      configure(:image_blob)       { visible false }
     end
 
     create do
-      field :title do
-        required false
-        help     'Leave blank to auto-fill from filename.'
-      end
+      field(:title) { required false; help 'Leave blank to auto-fill from filename.' }
       field :image, :active_storage do
-        help 'Upload a 1920×1080px image.'
+        label 'Image'
+        help  'Upload a 1920×1080px image.'
+        pretty_value { preview_thumb.call(bindings[:object], bindings[:view], 200) }
       end
-      field :display_seconds do
-        required false
-        help     'Leave blank to default to 10 seconds.'
-      end
+      field(:display_seconds) { required false; help 'Leave blank to default to 10 seconds.' }
       field :start_date
       field :end_date
       field :fallback do
         label 'Fallback slide?'
         help  'If checked, this slide will show when no other slides are active for a kiosk.'
       end
+      field :kiosks do
+        label 'Assign to kiosks'
+        help  'Pick the kiosks this slide should appear on.'
+        associated_collection_scope do
+          user = bindings[:controller].current_user
+          Proc.new do |scope|
+            user.admin? ? scope.order(:name) : scope.where(kiosk_group_id: user.kiosk_group_ids).order(:name)
+          end
+        end
+      end
     end
 
     update do
-      field :title do
-        required false
-        help     'Leave blank to auto-fill from filename.'
-      end
+      field(:title) { required false; help 'Leave blank to auto-fill from filename.' }
       field :image, :active_storage do
-        help 'Upload a 1920×1080px image.'
+        label 'Image'
+        help  'Upload a 1920×1080px image.'
+        pretty_value { preview_thumb.call(bindings[:object], bindings[:view], 200) }
       end
-      field :display_seconds do
-        required false
-        help     'Leave blank to default to 10 seconds.'
-      end
+      field(:display_seconds) { required false; help 'Leave blank to default to 10 seconds.' }
       field :start_date
       field :end_date do
         read_only do
@@ -390,9 +391,7 @@ RailsAdmin.config do |config|
         help  'If checked, this slide will show when no other slides are active for a kiosk.'
       end
 
-      field :kiosks do
-        help 'You can only pick among your groups—any other existing assignments will be preserved automatically.'
-      end
+      field(:kiosks) { help 'You can only pick among your groups—any other existing assignments will be preserved automatically.' }
     end
   end
 end
