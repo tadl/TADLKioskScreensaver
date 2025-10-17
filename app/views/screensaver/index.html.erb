@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-store">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Kiosk Screensaver</title>
     <style>
@@ -27,87 +28,116 @@
     </div>
 
     <script>
-      // --- BEGIN Sticky Params Helper ---
+      // --- Sticky Params ---
       window.kioskCode = "<%= params[:kiosk].to_s.gsub('"','') %>";
       window.kioskHost = "<%= params[:host].to_s.gsub('"','') %>";
-
       function stickyUrl(path) {
-        let url = path;
-        if (url.indexOf('?') === -1) {
-          url += '?kiosk=' + encodeURIComponent(window.kioskCode);
-        } else if (!/(\?|&)kiosk=/.test(url)) {
-          url += '&kiosk=' + encodeURIComponent(window.kioskCode);
-        }
-        if (window.kioskHost && !/(\?|&)host=/.test(url)) {
-          url += '&host=' + encodeURIComponent(window.kioskHost);
-        }
+        let url = path.includes('?') ? path : path + '?';
+        if (!/(\?|&)kiosk=/.test(url)) url += (url.endsWith('?') ? '' : '&') + 'kiosk=' + encodeURIComponent(window.kioskCode || '');
+        if (window.kioskHost && !/(\?|&)host=/.test(url)) url += '&host=' + encodeURIComponent(window.kioskHost);
         return url;
       }
-      // --- END Sticky Params Helper ---
 
       document.addEventListener("DOMContentLoaded", () => {
-        const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
+        const REFRESH_INTERVAL = 30 * 60 * 1000; // 30m
 
-        // Build initial slide list
+        // Build slide list (may be empty)
         let slides = <%= raw(@slide_data.to_json) %>;
-
-        if (!slides.length) return;
-
-        // Shuffle helper
-        function shuffle() {
-          for (let i = slides.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [slides[i], slides[j]] = [slides[j], slides[i]];
-          }
-        }
-
         let idx = 0;
         const img = document.getElementById("screensaver-image");
 
-        function showCurrentSlide() {
-          img.src = slides[idx].url;
-          img.alt = slides[idx].title || "";
+        // ----- Exit wiring (always on) -----
+        let navigating = false;
+        function exit() {
+          if (navigating) return;
+          navigating = true;
+          clearTimeout(window._timer);
+          try { navigator.vibrate?.(50); } catch {}
+          // Fallback re-arm if we didn't actually leave
+          const rearm = setTimeout(() => {
+            if (document.visibilityState === "visible") {
+              navigating = false;
+              // keep listening; no action needed since handlers are permanent
+            }
+          }, 1500);
+          window.addEventListener("pagehide", () => clearTimeout(rearm), { once: true });
+          window.location.replace(stickyUrl("/exit"));
         }
 
-        function nextSlide() {
-          idx = (idx + 1) % slides.length;
+        // Capture early, don’t use {once:true}
+        ["pointerdown", "keydown", "wheel", "touchstart"].forEach(evt => {
+          window.addEventListener(evt, exit, { capture: true, passive: true });
+        });
+
+        // Add movement exit with small jitter guard
+        const MIN_DELAY_MS = 300;      // ignore immediate synthetic moves
+        const MOVE_THRESHOLD = 18;     // ~18px combined movement
+        let startedAt = performance.now();
+        let firstMove = null;
+
+        function maybeExitOnMove(x, y) {
+          if (navigating) return;
+          if (performance.now() - startedAt < MIN_DELAY_MS) return;
+          if (!firstMove) { firstMove = { x, y }; return; }
+          const dx = Math.abs(x - firstMove.x);
+          const dy = Math.abs(y - firstMove.y);
+          if (dx + dy >= MOVE_THRESHOLD) exit();
+        }
+
+        window.addEventListener("pointermove", e => maybeExitOnMove(e.clientX, e.clientY), { passive: true });
+        window.addEventListener("mousemove",   e => maybeExitOnMove(e.clientX, e.clientY), { passive: true });
+
+        // ----- Slideshow only if we have slides -----
+        if (slides.length && img) {
+          function shuffle() {
+            for (let i = slides.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [slides[i], slides[j]] = [slides[j], slides[i]];
+            }
+          }
+          function showCurrentSlide() {
+            img.src = slides[idx].url;
+            img.alt = slides[idx].title || "";
+          }
+          function nextSlide() {
+            idx = (idx + 1) % slides.length;
+            showCurrentSlide();
+            schedule();
+          }
+          function schedule() {
+            clearTimeout(window._timer);
+            window._timer = setTimeout(nextSlide, (slides[idx].duration || 10) * 1000);
+          }
+
+          shuffle();
           showCurrentSlide();
           schedule();
         }
 
-        function schedule() {
-          clearTimeout(window._timer);
-          window._timer = setTimeout(
-            nextSlide,
-            slides[idx].duration * 1000
-          );
-        }
-
-        // Exit handlers: click, mousemove, keydown (after 2s)
-        function exit() { window.location = stickyUrl("/exit"); }
-        setTimeout(() => {
-          document.addEventListener("click",     exit, { once: true });
-          document.addEventListener("mousemove", exit, { once: true });
-          document.addEventListener("keydown",   exit, { once: true });
-        }, 2000);
-
-        // Start slideshow
-        shuffle();
-        showCurrentSlide();
-        schedule();
-
-        // Periodic JSON refresh
+        // ----- Periodic refresh (even if empty) -----
         setInterval(async () => {
           try {
-            const res = await fetch(stickyUrl("/slides.json"));
+            const res = await fetch(stickyUrl("/slides.json"), { cache: "no-store" });
             if (!res.ok) throw new Error(res.statusText);
             const { slides: updated } = await res.json();
             if (Array.isArray(updated) && updated.length) {
               slides = updated;
-              shuffle();
-              idx = 0;
-              showCurrentSlide();
-              schedule();
+              if (img) {
+                idx = 0;
+                // (re)start slideshow
+                clearTimeout(window._timer);
+                // reshuffle
+                for (let i = slides.length - 1; i > 0; i--) {
+                  const j = Math.floor(Math.random() * (i + 1));
+                  [slides[i], slides[j]] = [slides[j], slides[i]];
+                }
+                img.src = slides[0].url;
+                img.alt = slides[0].title || "";
+                window._timer = setTimeout(() => {
+                  idx = 0;
+                  nextSlide?.();
+                }, (slides[0].duration || 10) * 1000);
+              }
             }
           } catch (e) {
             console.error("Slide refresh failed:", e);
