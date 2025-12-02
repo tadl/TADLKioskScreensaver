@@ -1,0 +1,64 @@
+<%# app/views/rails_admin/_kiosk_status_grid.html.erb %>
+<%# Tiny guard so dashboard doesn't explode if KioskStatus isn't present in some env %>
+<% if defined?(KioskStatus) %>
+  <% user = current_user %>
+
+  <% kiosk_scope =
+       if user&.admin?
+         Kiosk.all
+       else
+         Kiosk.where(kiosk_group_id: user&.kiosk_group_ids.to_a)
+       end %>
+
+  <% statuses = KioskStatus
+      .includes(kiosk: :kiosk_group)
+      .where(kiosk_id: kiosk_scope.select(:id))
+      .order('kiosk_groups.name NULLS LAST, kiosks.name ASC, host ASC') %>
+
+  <% grouped = statuses.group_by(&:kiosk) %>
+
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="mb-0">Live Kiosk Status</h5>
+    </div>
+    <div class="card-body">
+      <% if grouped.blank? %>
+        <em>No kiosk status recorded yet. Entries will appear as kiosks enter the screensaver and exit to the OPAC.</em>
+      <% else %>
+        <div class="row">
+          <% grouped.sort_by { |kiosk, _| [kiosk.kiosk_group&.name.to_s, kiosk.name.to_s] }.each do |kiosk, rows| %>
+            <div class="col-md-4 col-lg-3 mb-3">
+              <div class="border rounded p-2 h-100">
+                <div class="mb-2">
+                  <strong><%= kiosk.name %></strong>
+                </div>
+
+                <% rows.each do |s| %>
+                  <% seconds = (Time.zone.now - s.state_changed_at).to_i
+                     hours   = seconds / 3600
+                     minutes = (seconds % 3600) / 60
+                     label   = hours.positive? ? "#{hours}h#{format('%02d', minutes)}m" : "#{minutes}m"
+
+                     active  = (s.state == 'opac') # OPAC == “active”, screensaver == “inactive”
+                     pill_class =
+                       if active
+                         'bg-success'
+                       else
+                         'bg-warning text-dark'
+                       end
+                  %>
+                  <span
+                    class="badge rounded-pill <%= pill_class %> me-1 mb-1"
+                    title="<%= "#{s.host} #{s.state} since #{l(s.state_changed_at, format: :short)}" %>">
+                    <%= s.host %>
+                    <small class="ms-1"><%= label %></small>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

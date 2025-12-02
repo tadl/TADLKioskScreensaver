@@ -68,6 +68,17 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.index ["kiosk_code", "host", "started_at"], name: "index_kiosk_sessions_on_kiosk_code_and_host_and_started_at"
   end
 
+  create_table "kiosk_statuses", force: :cascade do |t|
+    t.bigint "kiosk_id", null: false
+    t.string "host", null: false
+    t.integer "state", default: 0, null: false
+    t.datetime "state_changed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kiosk_id", "host"], name: "index_kiosk_statuses_on_kiosk_id_and_host", unique: true
+    t.index ["kiosk_id"], name: "index_kiosk_statuses_on_kiosk_id"
+  end
+
   create_table "kiosks", force: :cascade do |t|
     t.string "name"
     t.string "slug"
@@ -129,6 +140,7 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "kiosk_statuses", "kiosks"
   add_foreign_key "kiosks", "kiosk_groups"
   add_foreign_key "user_permissions", "permissions"
   add_foreign_key "user_permissions", "users"
