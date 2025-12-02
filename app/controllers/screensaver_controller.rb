@@ -120,20 +120,30 @@ class ScreensaverController < ApplicationController
 
   private
 
-  # Only changes state_changed_at when the state actually flips.
+  # For dashboards:
+  # - If state changes (screensaver -> opac or vice versa), update state + timestamp.
+  # - If we *re-enter* the screensaver with the same state (e.g., reboot straight into it),
+  #   bump state_changed_at anyway so the idle clock restarts.
   def upsert_kiosk_status(kiosk, host, new_state)
     return unless kiosk && host.present?
 
-    now = Time.zone.now
-    ks  = KioskStatus.find_or_initialize_by(kiosk: kiosk, host: host)
+    now           = Time.zone.now
+    new_state_str = new_state.to_s
+    ks            = KioskStatus.find_or_initialize_by(kiosk: kiosk, host: host)
 
-    if ks.new_record? || ks.state != new_state.to_s
-      ks.state            = new_state
+    if ks.new_record? || ks.state != new_state_str
+      ks.state            = new_state_str
+      ks.state_changed_at = now
+    elsif new_state_str == "screensaver"
+      # Same state but a fresh screensaver load (e.g., reboot) — treat as new “idle since”
       ks.state_changed_at = now
     end
 
     ks.save! if ks.changed?
   rescue => e
-    Rails.logger.warn("[KioskStatus] upsert failed for kiosk=#{kiosk&.id} host=#{host} state=#{new_state}: #{e.class}: #{e.message}")
+    Rails.logger.warn(
+      "[KioskStatus] upsert failed for kiosk=#{kiosk&.id} host=#{host} state=#{new_state}: " \
+      "#{e.class}: #{e.message}"
+    )
   end
 end
