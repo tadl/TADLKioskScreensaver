@@ -1,7 +1,8 @@
 # config/initializers/rails_admin.rb
 
 RailsAdmin.config do |config|
-  config.asset_source      = :importmap
+  # Use the asset pipeline (Sprockets) for RailsAdmin’s JS/CSS so its widgets work correctly
+  config.asset_source      = :sprockets
   config.parent_controller = '::ApplicationController'
 
   # == Authentication ==
@@ -221,6 +222,39 @@ RailsAdmin.config do |config|
     end
 
     edit do
+      field :name do
+        label 'Name'
+        read_only do
+          u = bindings[:controller].current_user
+          !(u.admin? || u.can?('manage_kiosks'))
+        end
+      end
+
+      field :slug do
+        label 'Slug'
+        help 'Used in kiosk URLs; change with care.'
+        read_only do
+          u = bindings[:controller].current_user
+          !u.admin?
+        end
+      end
+
+      field :catalog_url do
+        label 'Catalog URL'
+        read_only do
+          u = bindings[:controller].current_user
+          !(u.admin? || u.can?('manage_kiosks'))
+        end
+      end
+
+      field :kiosk_group do
+        label 'Kiosk Group'
+        read_only do
+          u = bindings[:controller].current_user
+          !(u.admin? || u.can?('manage_kioskgroups') || u.can?('manage_kiosks'))
+        end
+      end
+
       field :slides do
         read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
         help 'Only slides at exactly 1920×1080 are available here.'
@@ -236,10 +270,6 @@ RailsAdmin.config do |config|
 
       field :location do
         read_only { !bindings[:controller].current_ability.can?(:manage, bindings[:object]) }
-      end
-
-      %i[name slug catalog_url kiosk_group].each do |f|
-        field(f) { visible false }
       end
     end
 
@@ -383,7 +413,7 @@ RailsAdmin.config do |config|
         read_only do
           slide = bindings[:object]
           user  = bindings[:controller].current_user
-          slide.kiosks.where.not(kiosk_group_id: user.kiosk_group_ids).exists?
+          !user.admin? && slide.kiosks.where.not(kiosk_group_id: user.kiosk_group_ids).exists?
         end
       end
       field :fallback do
