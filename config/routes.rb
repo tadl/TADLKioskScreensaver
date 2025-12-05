@@ -1,6 +1,6 @@
 Rails.application.routes.draw do
   get    '/login',  to: 'sessions#new',     as: :login
-  delete  '/logout', to: 'sessions#destroy', as: :logout
+  delete '/logout', to: 'sessions#destroy', as: :logout
   get '/auth/:provider/callback', to: 'sessions#create'
 
   mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
@@ -10,6 +10,7 @@ Rails.application.routes.draw do
   get '/slides.json', to: 'screensaver#slides_json', defaults: { format: :json }
 
   get '/exit', to: 'screensaver#exit', as: :exit_screensaver
+  get '/home', to: 'screensaver#home', as: :home_screensaver
 
   root to: "screensaver#index"
 
@@ -26,5 +27,4 @@ Rails.application.routes.draw do
     via: :all,
     defaults: { code: "404" },
     constraints: ->(req) { req.format.html? }
-
 end

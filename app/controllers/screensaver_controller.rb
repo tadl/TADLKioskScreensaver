@@ -118,6 +118,22 @@ class ScreensaverController < ApplicationController
     end
   end
 
+  # GET /home?kiosk=<slug>&host=<hostname>
+  #
+  # “Soft” home:
+  # - Redirects to the kiosk’s catalog_url
+  # - DOES NOT touch KioskSession or KioskStatus (no timer resets)
+  def home
+    kiosk_code = params[:kiosk].to_s
+    kiosk      = Kiosk.find_by(slug: kiosk_code)
+
+    if kiosk
+      redirect_to kiosk.catalog_url, allow_other_host: true
+    else
+      redirect_to root_path
+    end
+  end
+
   private
 
   # For dashboards:
