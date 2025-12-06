@@ -26,9 +26,11 @@
         <em>No kiosk status recorded yet. Entries will appear as kiosks enter the screensaver and exit to the OPAC.</em>
       <% else %>
         <div class="row">
-          <% grouped.sort_by { |kiosk, _| [kiosk.kiosk_group&.name.to_s, kiosk.name.to_s] }.each do |kiosk, rows| %>
+          <% grouped
+             .sort_by { |kiosk, _| [kiosk.kiosk_group&.name.to_s, kiosk.name.to_s] }
+             .each do |kiosk, rows| %>
             <div class="col-md-4 col-lg-3 mb-3">
-              <div class="border rounded p-2 h-100">
+              <div class="border rounded p-3 h-100">
                 <div class="mb-2">
                   <strong><%= kiosk.name %></strong>
                 </div>
@@ -40,19 +42,20 @@
                      label   = hours.positive? ? "#{hours}h#{format('%02d', minutes)}m" : "#{minutes}m"
 
                      active  = (s.state == 'opac') # OPAC == “active”, screensaver == “inactive”
-                     pill_class =
+                     row_class =
                        if active
-                         'bg-success'
+                         'bg-success text-white'
                        else
                          'bg-warning text-dark'
                        end
                   %>
-                  <span
-                    class="badge rounded-pill <%= pill_class %> me-1 mb-1"
+
+                  <div
+                    class="d-flex align-items-center justify-content-between rounded-3 px-2 py-1 mb-1 <%= row_class %>"
                     title="<%= "#{s.host} #{s.state} since #{l(s.state_changed_at, format: :short)}" %>">
-                    <%= s.host %>
-                    <small class="ms-1"><%= label %></small>
-                  </span>
+                    <span class="fw-semibold"><%= s.host %></span>
+                    <span class="text-monospace small"><%= label %></span>
+                  </div>
                 <% end %>
               </div>
             </div>
