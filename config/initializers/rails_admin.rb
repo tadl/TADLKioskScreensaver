@@ -16,7 +16,7 @@ RailsAdmin.config do |config|
 
   # == UI ==
   config.main_app_name   = ['Kiosk Screensaver', 'Admin']
-  config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission]
+  config.included_models = %w[KioskGroup Kiosk Slide Permission UserPermission Host]
 
   preview_thumb = lambda do |obj, view, size|
     return '-' unless obj.respond_to?(:image_attachment)
@@ -115,6 +115,61 @@ RailsAdmin.config do |config|
       field(:user)          { read_only true; help 'Users are managed via Google OAuth; you cannot change this here.' }
       field :permission
       field(:kiosk_groups)  { help 'Select which kiosk groups this user may manage.' }
+    end
+  end
+
+  # == Host ==
+  config.model 'Host' do
+    navigation_label 'Admin'
+    label            'Host'
+    label_plural     'Hosts'
+
+    visible do
+      bindings[:controller].current_user.admin?
+    end
+
+    list do
+      field :name
+      field :location
+      field :active
+      field :notes
+
+      field :kiosk_statuses do
+        label 'Statuses'
+        pretty_value { bindings[:object].kiosk_statuses.count }
+      end
+
+      field :kiosk_sessions do
+        label 'Sessions'
+        pretty_value { bindings[:object].kiosk_sessions.count }
+      end
+    end
+
+    show do
+      field :name
+      field :location
+      field :active
+      field :notes
+      field :kiosk_statuses
+      field :kiosk_sessions
+      field :created_at
+      field :updated_at
+    end
+
+    edit do
+      field :name do
+        help 'Hostname as reported by the kiosk (e.g. nucpac02). Changing this will detach it from existing status/session rows.'
+      end
+      field :location
+      field :active
+      field :notes
+    end
+
+    create do
+      field :name
+      field :location
+      field :active
+      field :notes
     end
   end
 

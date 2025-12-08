@@ -42,6 +42,16 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "hosts", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "location"
+    t.text "notes"
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_hosts_on_name", unique: true
+  end
+
   create_table "kiosk_groups", force: :cascade do |t|
     t.string "name", null: false
     t.string "slug", null: false

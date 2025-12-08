@@ -12,6 +12,9 @@ class ScreensaverController < ApplicationController
     kiosk_code = params[:kiosk].to_s
     host       = params[:host].to_s.presence
 
+    # Ensure we have a Host record for this hostname
+    Host.find_or_create_by!(name: host) if host.present?
+
     # End session for this kiosk/host if both present
     if host.present?
       session = KioskSession.where(
@@ -86,6 +89,8 @@ class ScreensaverController < ApplicationController
     kiosk_code = params[:kiosk].to_s
     host       = params[:host].to_s.presence
 
+    Host.find_or_create_by!(name: host) if host.present?
+
     # Start a new session if both kiosk and host present and no open session
     if kiosk_code.present? && host.present?
       open_session = KioskSession.where(
@@ -125,7 +130,11 @@ class ScreensaverController < ApplicationController
   # - DOES NOT touch KioskSession or KioskStatus (no timer resets)
   def home
     kiosk_code = params[:kiosk].to_s
-    kiosk      = Kiosk.find_by(slug: kiosk_code)
+    host       = params[:host].to_s.presence
+
+    Host.find_or_create_by!(name: host) if host.present?
+
+    kiosk = Kiosk.find_by(slug: kiosk_code)
 
     if kiosk
       redirect_to kiosk.catalog_url, allow_other_host: true
