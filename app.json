@@ -6,6 +6,18 @@
     "RAILS_ENV": { "value": "production" },
     "SECRET_KEY_BASE": { "generator": "secret" }
   },
+  "healthchecks": {
+    "web": [
+      {
+        "type": "startup",
+        "name": "web-ready-check",
+        "path": "/up",
+        "initialDelay": 5,
+        "timeout": 5,
+        "attempts": 3
+      }
+    ]
+  },
   "dokku": {
     "plugins": [ "postgres" ]
   },
