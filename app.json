@@ -1,31 +1,22 @@
 {
-    "name": "kiosk-screensaver",
-    "env": {
-        "RAILS_SERVE_STATIC_FILES": { "value": "enabled" },
-        "RAILS_LOG_TO_STDOUT": { "value": "true" },
-        "RAILS_ENV": { "value": "production" },
-        "SECRET_KEY_BASE": { "generator": "secret" }
-    },
-    "require": {
-        "plugins": [
-            {
-                "name": "postgres",
-                "commands": [
-                    "postgres:create $APP",
-                    "postgres:link   $APP $APP"
-                ]
-            }
-        ]
-    },
-    "scripts": {
-        "dokku": {
-            "predeploy": "bundle exec rake db:migrate",
-            "postdeploy": "bundle exec rails db:seed && bundle exec rake assets:precompile"
-        }
-    },
-    "buildpacks": [
-        { "url": "herokuk/nodejs" },
-        { "url": "heroku/ruby" }
-    ]
+  "name": "kiosk-screensaver",
+  "env": {
+    "RAILS_SERVE_STATIC_FILES": { "value": "enabled" },
+    "RAILS_LOG_TO_STDOUT": { "value": "true" },
+    "RAILS_ENV": { "value": "production" },
+    "SECRET_KEY_BASE": { "generator": "secret" }
+  },
+  "dokku": {
+    "plugins": [ "postgres" ]
+  },
+  "scripts": {
+    "dokku": {
+      "predeploy": "bundle exec rake db:migrate",
+      "postdeploy": "bundle exec rails db:seed && bundle exec rake assets:precompile"
+    }
+  },
+  "buildpacks": [
+    { "url": "herokuk/nodejs" },
+    { "url": "heroku/ruby" }
+  ]
 }
-
