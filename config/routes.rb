@@ -12,6 +12,13 @@ Rails.application.routes.draw do
   get '/exit', to: 'screensaver#exit', as: :exit_screensaver
   get '/home', to: 'screensaver#home', as: :home_screensaver
 
+  namespace :api do
+    namespace :kiosks do
+      post :heartbeat
+      post :logs
+    end
+  end
+
   root to: "screensaver#index"
 
   %w(404 422 500).each do |code|

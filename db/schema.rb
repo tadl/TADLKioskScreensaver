@@ -67,6 +67,31 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.bigint "kiosk_group_id", null: false
   end
 
+  create_table "kiosk_heartbeats", force: :cascade do |t|
+    t.string "kiosk_id", null: false
+    t.datetime "last_seen_at", null: false
+    t.bigint "uptime_seconds"
+    t.string "kiosk_service"
+    t.integer "chromium_pids"
+    t.jsonb "raw_payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kiosk_id"], name: "index_kiosk_heartbeats_on_kiosk_id", unique: true
+    t.index ["last_seen_at"], name: "index_kiosk_heartbeats_on_last_seen_at"
+  end
+
+  create_table "kiosk_logs", force: :cascade do |t|
+    t.string "kiosk_id", null: false
+    t.datetime "occurred_at", null: false
+    t.string "level"
+    t.text "message"
+    t.jsonb "raw_payload", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["kiosk_id"], name: "index_kiosk_logs_on_kiosk_id"
+    t.index ["occurred_at"], name: "index_kiosk_logs_on_occurred_at"
+  end
+
   create_table "kiosk_sessions", force: :cascade do |t|
     t.string "kiosk_code", null: false
     t.string "host"
