@@ -25,7 +25,7 @@ class Api::KiosksController < ActionController::API
     hb.last_seen_at     = ts
     hb.uptime_seconds   = payload["uptime_seconds"]
     hb.kiosk_service    = payload["kiosk_service"]
-    hb.chromium_pids    = payload["chromium_pids"]
+    hb.chromium_pids    = payload["chromium_pid_count"] || payload["chromium_pids"]
     hb.raw_payload      = payload
     hb.save!
 
@@ -35,14 +35,51 @@ class Api::KiosksController < ActionController::API
   end
 
   # POST /api/kiosks/logs
-  # Minimal shape (suggested):
-  # { "kiosk_id": "nucpac02", "ts": "...", "level": "warn", "message": "...", "payload": {...} }
   def logs
     payload = safe_json_payload
 
     kiosk_id = (payload["kiosk_id"] || request.headers["X-Kiosk-Id"]).to_s.strip
     return render json: { ok: false, error: "missing kiosk_id" }, status: :bad_request if kiosk_id.blank?
 
+    # Batch mode: { events: [ ... ] }
+    if payload["events"].is_a?(Array)
+      events = payload["events"]
+
+      # Avoid unbounded inserts if something goes nuts
+      events = events.first(500)
+
+      rows = events.map do |ev|
+        ev = ev.is_a?(Hash) ? ev : { "message" => ev.to_s }
+
+        occurred_at =
+          parse_time(ev["ts"] || ev["occurred_at"]) ||
+          parse_time(payload["sent_at"]) ||
+          Time.zone.now
+
+        level = ev["level"].to_s.presence
+        message =
+          ev["message"].to_s.presence ||
+          ev["kind"].to_s.presence ||
+          "(no message)"
+
+        {
+          kiosk_id: kiosk_id,
+          occurred_at: occurred_at,
+          level: level,
+          message: message,
+          raw_payload: ev,
+          created_at: Time.zone.now,
+          updated_at: Time.zone.now
+        }
+      end
+
+      # Rails 6+: bulk insert
+      KioskLog.insert_all!(rows) if rows.any?
+
+      return render json: { ok: true, inserted: rows.size }
+    end
+
+    # Single-event mode (your existing behavior)
     ts = parse_time(payload["ts"]) || Time.zone.now
 
     KioskLog.create!(
