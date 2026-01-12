@@ -77,3 +77,5 @@ gem "cancancan"
 gem 'bootstrap', '~> 5.3'
 
 gem "fastimage"
+
+gem "uri", ">= 1.0.4"

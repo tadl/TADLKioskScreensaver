@@ -361,7 +361,7 @@ GEM
       railties (>= 7.1.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
-    uri (1.0.3)
+    uri (1.1.1)
     version_gem (1.1.8)
     web-console (4.2.1)
       actionview (>= 6.0.0)
@@ -416,6 +416,7 @@ DEPENDENCIES
   tailwindcss-rails
   turbo-rails
   tzinfo-data
+  uri (>= 1.0.4)
   web-console
 
 RUBY VERSION
