@@ -76,6 +76,9 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.jsonb "raw_payload", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "chromium_devtools_ok"
+    t.string "chromium_devtools_http"
+    t.integer "chromium_devtools_ms"
     t.index ["kiosk_id"], name: "index_kiosk_heartbeats_on_kiosk_id", unique: true
     t.index ["last_seen_at"], name: "index_kiosk_heartbeats_on_last_seen_at"
   end

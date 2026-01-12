@@ -3,6 +3,13 @@ Rails.application.routes.draw do
   delete '/logout', to: 'sessions#destroy', as: :logout
   get '/auth/:provider/callback', to: 'sessions#create'
 
+  namespace :admin do
+    get "kiosk_hosts/:host(.:format)",
+        to: "kiosk_hosts#show",
+        defaults: { format: :json },
+        constraints: { host: /[^\/\.]+/ }
+  end
+
   mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
 
   get "up" => "rails/health#show", as: :rails_health_check

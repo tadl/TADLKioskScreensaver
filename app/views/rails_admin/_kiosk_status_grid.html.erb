@@ -1,4 +1,6 @@
 <%# app/views/rails_admin/_kiosk_status_grid.html.erb %>
+<%# Live Kiosk Status grid + clickable host rows -> modal w/ heartbeat + logs %>
+
 <%# Tiny guard so dashboard doesn't explode if KioskStatus isn't present in some env %>
 <% if defined?(KioskStatus) %>
   <% user = current_user %>
@@ -21,6 +23,7 @@
     <div class="card-header">
       <h5 class="mb-0">Live Kiosk Status</h5>
     </div>
+
     <div class="card-body">
       <% if grouped.blank? %>
         <em>No kiosk status recorded yet. Entries will appear as kiosks enter the screensaver and exit to the OPAC.</em>
@@ -29,6 +32,7 @@
           <% grouped
              .sort_by { |kiosk, _| [kiosk.kiosk_group&.name.to_s, kiosk.name.to_s] }
              .each do |kiosk, rows| %>
+
             <div class="col-md-4 col-lg-3 mb-3">
               <div class="border rounded p-3 h-100">
                 <div class="mb-2">
@@ -51,12 +55,15 @@
                   %>
 
                   <div
-                    class="d-flex align-items-center justify-content-between rounded-3 px-2 py-1 mb-1 <%= row_class %>"
-                    title="<%= "#{s.host} #{s.state} since #{l(s.state_changed_at, format: :short)}" %>">
+                    class="d-flex align-items-center justify-content-between rounded-3 px-2 py-1 mb-1 <%= row_class %> kiosk-host-row"
+                    data-kiosk-host="<%= s.host %>"
+                    style="cursor: pointer;"
+                    title="<%= "#{s.host} #{s.state} since #{l(s.state_changed_at, format: :short)} — click for details" %>">
                     <span class="fw-semibold"><%= s.host %></span>
                     <span class="text-monospace small"><%= label %></span>
                   </div>
                 <% end %>
+
               </div>
             </div>
           <% end %>
@@ -64,4 +71,124 @@
       <% end %>
     </div>
   </div>
+
+  <%# --- Host details modal (Bootstrap 5 markup) ---------------------------- %>
+  <div class="modal fade" id="kioskHostModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="kioskHostModalTitle">Kiosk</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="kioskHostModalBody">
+          <div class="text-muted">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# --- Inline JS (works without touching rails_admin.js). Fetches JSON from /admin/kiosk_hosts/:host.json --- %>
+  <script>
+    (function () {
+      function esc(s) {
+        return String(s ?? "").replace(/[&<>"']/g, function (c) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+        });
+      }
+
+      function fmtTime(t) {
+        if (!t) return "";
+        try { return new Date(t).toLocaleString(); } catch (e) { return String(t); }
+      }
+
+      async function fetchHost(host) {
+        var url = "/admin/kiosk_hosts/" + encodeURIComponent(host) + ".json";
+        var resp = await fetch(url, { headers: { "Accept": "application/json" }, cache: "no-store" });
+        if (!resp.ok) throw new Error("HTTP " + resp.status);
+        return await resp.json();
+      }
+
+      function renderBody(data) {
+        var hb = data.heartbeat || {};
+        var logs = Array.isArray(data.logs) ? data.logs : [];
+
+        var hbHtml = hb.kiosk_id ? (
+          '<div class="mb-3">' +
+            '<div><strong>Last seen:</strong> ' + esc(fmtTime(hb.last_seen_at)) + '</div>' +
+            '<div><strong>Uptime:</strong> ' + esc(hb.uptime_seconds ?? "") + 's</div>' +
+            '<div><strong>Kiosk service:</strong> ' + esc(hb.kiosk_service ?? "") + '</div>' +
+            '<div><strong>Chromium pid count:</strong> ' + esc(hb.chromium_pids ?? "") + '</div>' +
+            '<div><strong>DevTools OK:</strong> ' + esc(hb.chromium_devtools_ok) + '</div>' +
+            '<div><strong>DevTools HTTP:</strong> ' + esc(hb.chromium_devtools_http ?? "") + '</div>' +
+            '<div><strong>DevTools ms:</strong> ' + esc(hb.chromium_devtools_ms ?? "") + '</div>' +
+          '</div>'
+        ) : '<div class="text-muted mb-3">No heartbeat recorded for this host yet.</div>';
+
+        var logsHtml = logs.length ? (
+          '<div>' +
+            '<h6>Recent logs</h6>' +
+            '<div class="list-group">' +
+              logs.map(function (l) {
+                return (
+                  '<div class="list-group-item">' +
+                    '<div class="d-flex justify-content-between">' +
+                      '<span class="text-monospace">' + esc(l.level ?? "") + '</span>' +
+                      '<span class="text-muted">' + esc(fmtTime(l.occurred_at)) + '</span>' +
+                    '</div>' +
+                    '<div>' + esc(l.message ?? "") + '</div>' +
+                  '</div>'
+                );
+              }).join("") +
+            '</div>' +
+          '</div>'
+        ) : '<div class="text-muted">No logs recorded for this host yet.</div>';
+
+        return hbHtml + logsHtml;
+      }
+
+      function showModal(title, bodyHtml) {
+        var titleEl = document.getElementById("kioskHostModalTitle");
+        var bodyEl  = document.getElementById("kioskHostModalBody");
+        var modalEl = document.getElementById("kioskHostModal");
+        if (!titleEl || !bodyEl || !modalEl) return;
+
+        titleEl.textContent = title;
+        bodyEl.innerHTML = bodyHtml;
+
+        // Bootstrap 5
+        if (window.bootstrap && window.bootstrap.Modal) {
+          window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
+          return;
+        }
+
+        // Bootstrap 4 (jQuery)
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
+          window.jQuery(modalEl).modal("show");
+          return;
+        }
+
+        // Last-resort fallback
+        modalEl.classList.add("show");
+        modalEl.style.display = "block";
+      }
+
+      document.addEventListener("click", async function (e) {
+        var row = e.target.closest && e.target.closest(".kiosk-host-row[data-kiosk-host]");
+        if (!row) return;
+
+        var host = row.getAttribute("data-kiosk-host");
+        if (!host) return;
+
+        showModal(host, '<div class="text-muted">Loading…</div>');
+
+        try {
+          var data = await fetchHost(host);
+          if (!data || data.ok !== true) throw new Error((data && data.error) || "not ok");
+          showModal(host, renderBody(data));
+        } catch (err) {
+          showModal(host, '<div class="text-danger">Failed to load host details: ' + esc(err && err.message ? err.message : err) + '</div>');
+        }
+      });
+    })();
+  </script>
 <% end %>

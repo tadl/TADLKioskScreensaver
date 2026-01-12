@@ -22,11 +22,22 @@ class Api::KiosksController < ActionController::API
     ts = parse_time(payload["ts"]) || Time.zone.now
 
     hb = KioskHeartbeat.find_or_initialize_by(kiosk_id: kiosk_id)
-    hb.last_seen_at     = ts
-    hb.uptime_seconds   = payload["uptime_seconds"]
-    hb.kiosk_service    = payload["kiosk_service"]
-    hb.chromium_pids    = payload["chromium_pid_count"] || payload["chromium_pids"]
-    hb.raw_payload      = payload
+    hb.last_seen_at   = ts
+    hb.uptime_seconds = payload["uptime_seconds"]
+    hb.kiosk_service  = payload["kiosk_service"]
+
+    pid_count =
+      payload["chromium_pid_count"] ||
+      payload["chromium_pids"]&.to_s&.split&.length ||
+      payload["chromium_pids"]
+
+    hb.chromium_pids = pid_count.to_i if pid_count.present?
+
+    hb.chromium_devtools_ok   = payload["chromium_devtools_ok"]
+    hb.chromium_devtools_http = payload["chromium_devtools_http"].to_s.presence
+    hb.chromium_devtools_ms   = payload["chromium_devtools_ms"]
+
+    hb.raw_payload = payload
     hb.save!
 
     render json: { ok: true }
