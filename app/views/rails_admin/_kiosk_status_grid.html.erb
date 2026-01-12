@@ -115,7 +115,7 @@
         var hbHtml = hb.kiosk_id ? (
           '<div class="mb-3">' +
             '<div><strong>Last seen:</strong> ' + esc(fmtTime(hb.last_seen_at)) + '</div>' +
-            '<div><strong>Uptime:</strong> ' + human_duration(esc(hb.uptime_seconds) ?? "") + '</div>' +
+            '<div><strong>Uptime:</strong> ' + humanDuration(esc(hb.uptime_seconds) ?? "") + '</div>' +
             '<div><strong>Kiosk service:</strong> ' + esc(hb.kiosk_service ?? "") + '</div>' +
             '<div><strong>Chromium pid count:</strong> ' + esc(hb.chromium_pids ?? "") + '</div>' +
             '<div><strong>DevTools OK:</strong> ' + esc(hb.chromium_devtools_ok) + '</div>' +
@@ -190,5 +190,31 @@
         }
       });
     })();
+
+    function humanDuration(seconds) {
+      seconds = Number(seconds);
+      if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
+
+      const units = [
+        ["y",  365 * 24 * 60 * 60],
+        ["mo", 30  * 24 * 60 * 60],
+        ["w",  7   * 24 * 60 * 60],
+        ["d",  24  * 60 * 60],
+        ["h",  60  * 60],
+        ["m",  60],
+        ["s",  1],
+      ];
+
+      const parts = [];
+      for (const [label, size] of units) {
+        if (seconds >= size) {
+          const q = Math.floor(seconds / size);
+          seconds = seconds % size;
+          parts.push(`${q}${label}`);
+        }
+      }
+      return parts.join(" ");
+    }
+
   </script>
 <% end %>
