@@ -49,4 +49,30 @@ module ApplicationHelper
     Rails.logger.warn("ERROR parse_open_minutes(#{hours_str.inspect}): #{e}")
     0
   end
+
+  # Human readable duration from seconds.
+  # Uses fixed conversions: 1y=365d, 1mo=30d, 1w=7d.
+  def human_duration(total_seconds)
+    secs = total_seconds.to_i
+    return "0s" if secs <= 0
+
+    units = [
+      ["y",  365 * 24 * 60 * 60],
+      ["mo", 30  * 24 * 60 * 60],
+      ["w",  7   * 24 * 60 * 60],
+      ["d",  24  * 60 * 60],
+      ["h",  60  * 60],
+      ["m",  60],
+      ["s",  1]
+    ]
+
+    parts = []
+    units.each do |label, size|
+      next if secs < size
+      q, secs = secs.divmod(size)
+      parts << "#{q}#{label}"
+    end
+
+    parts.join(" ")
+  end
 end

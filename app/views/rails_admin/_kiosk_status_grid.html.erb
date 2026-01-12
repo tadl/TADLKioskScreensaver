@@ -115,7 +115,7 @@
         var hbHtml = hb.kiosk_id ? (
           '<div class="mb-3">' +
             '<div><strong>Last seen:</strong> ' + esc(fmtTime(hb.last_seen_at)) + '</div>' +
-            '<div><strong>Uptime:</strong> ' + esc(hb.uptime_seconds ?? "") + 's</div>' +
+            '<div><strong>Uptime:</strong> ' + human_duration(esc(hb.uptime_seconds) ?? "") + '</div>' +
             '<div><strong>Kiosk service:</strong> ' + esc(hb.kiosk_service ?? "") + '</div>' +
             '<div><strong>Chromium pid count:</strong> ' + esc(hb.chromium_pids ?? "") + '</div>' +
             '<div><strong>DevTools OK:</strong> ' + esc(hb.chromium_devtools_ok) + '</div>' +
