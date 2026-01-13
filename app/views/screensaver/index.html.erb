@@ -11,6 +11,14 @@
         width: 100%; height: 100%;
         overflow: hidden; background: black;
       }
+
+      /* Prevent "drag image -> new tab / navigate to image" behavior */
+      #screensaver-image {
+        -webkit-user-drag: none;
+        user-select: none;
+        -webkit-user-select: none;
+        pointer-events: none; /* exit listeners are on window/document, so this is safe */
+      }
     </style>
   </head>
   <body>
@@ -18,6 +26,7 @@
       <% if @slides.any? %>
         <img
           id="screensaver-image"
+          draggable="false"
           style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;"
         />
       <% else %>
@@ -45,6 +54,12 @@
         let slides = <%= raw(@slide_data.to_json) %>;
         let idx = 0;
         const img = document.getElementById("screensaver-image");
+
+        // Extra safety: if something tries to drag/open the image anyway, block it.
+        if (img) {
+          img.addEventListener("dragstart", (e) => { try { e.preventDefault(); } catch {} }, { capture: true });
+          img.addEventListener("contextmenu", (e) => { try { e.preventDefault(); } catch {} }, { capture: true });
+        }
 
         // ---- timers / bookkeeping ----
         let slideTimer = null;
@@ -78,7 +93,6 @@
         // Fire on “definite” input events
         const wakeEvents = ["pointerdown", "mousedown", "touchstart", "keydown", "wheel"];
         wakeEvents.forEach((evt) => {
-          // Attach to BOTH so we catch events even if something odd is happening with propagation.
           window.addEventListener(evt, exit,   { capture: true, passive: true });
           document.addEventListener(evt, exit, { capture: true, passive: true });
         });
@@ -129,8 +143,18 @@
         function clampDurationSeconds(n) {
           const x = Number(n);
           if (!Number.isFinite(x)) return 10;
-          // keep it sane
           return Math.max(3, Math.min(10 * 60, x));
+        }
+
+        function safeSlideUrl(u) {
+          // Only allow http(s) URLs; avoids any weirdness if slide data is bad.
+          try {
+            const parsed = new URL(String(u), window.location.origin);
+            if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+            return parsed.toString();
+          } catch (e) {
+            return null;
+          }
         }
 
         function showCurrentSlide() {
@@ -139,10 +163,14 @@
           const s = slides[idx];
           expectedSlideMs = clampDurationSeconds(s.duration) * 1000;
 
-          img.src = s.url;
-          img.alt = s.title || "";
+          const u = safeSlideUrl(s.url);
+          if (!u) {
+            setTimeout(() => { if (!navigating) nextSlide(); }, 250);
+            return;
+          }
 
-          // Don’t update lastSlideAdvanceAt here; do it on load (more accurate)
+          img.src = u;
+          img.alt = s.title || "";
         }
 
         function scheduleNext() {
@@ -171,20 +199,18 @@
         if (img) {
           img.addEventListener("load", () => { lastSlideAdvanceAt = nowMs(); }, { passive: true });
           img.addEventListener("error", () => {
-            // If a slide image 404s or fails, try the next one soon.
             setTimeout(() => { if (!navigating) nextSlide(); }, 1500);
           }, { passive: true });
         }
 
         if (slides.length && img) startSlideshow();
 
-        // Watchdog: if the slideshow stalls (timer missed, hung load, etc), advance.
+        // Watchdog: if the slideshow stalls, advance.
         setInterval(() => {
           if (navigating) return;
           if (!slides.length || !img) return;
 
           const msSince = nowMs() - lastSlideAdvanceAt;
-          // If we haven't successfully loaded a slide in a while, force-advance.
           const stallThreshold = (expectedSlideMs || 10000) + 45000; // duration + 45s
           if (msSince > stallThreshold) {
             nextSlide();
