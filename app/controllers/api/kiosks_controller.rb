@@ -52,56 +52,82 @@ class Api::KiosksController < ActionController::API
     kiosk_id = (payload["kiosk_id"] || request.headers["X-Kiosk-Id"]).to_s.strip
     return render json: { ok: false, error: "missing kiosk_id" }, status: :bad_request if kiosk_id.blank?
 
-    # Batch mode: { events: [ ... ] }
-    if payload["events"].is_a?(Array)
-      events = payload["events"]
+    now = Time.zone.now
 
-      # Avoid unbounded inserts if something goes nuts
-      events = events.first(500)
-
-      rows = events.map do |ev|
-        ev = ev.is_a?(Hash) ? ev : { "message" => ev.to_s }
-
-        occurred_at =
-          parse_time(ev["ts"] || ev["occurred_at"]) ||
-          parse_time(payload["sent_at"]) ||
-          Time.zone.now
-
-        level = ev["level"].to_s.presence
-        message =
-          ev["message"].to_s.presence ||
-          ev["kind"].to_s.presence ||
-          "(no message)"
-
-        {
-          kiosk_id: kiosk_id,
-          occurred_at: occurred_at,
-          level: level,
-          message: message,
-          raw_payload: ev,
-          created_at: Time.zone.now,
-          updated_at: Time.zone.now
-        }
+    # Treat everything as batch internally; single-event payloads become a 1-item array.
+    events =
+      if payload["events"].is_a?(Array)
+        payload["events"]
+      else
+        [payload]
       end
 
-      # Rails 6+: bulk insert
-      KioskLog.insert_all!(rows) if rows.any?
+    # Avoid unbounded inserts if something goes nuts
+    events = events.first(500)
 
-      return render json: { ok: true, inserted: rows.size }
+    # Envelope == everything except the events array.
+    envelope = payload.is_a?(Hash) ? payload.dup : {}
+    envelope.delete("events")
+
+    request_meta = {
+      "remote_ip"  => request.remote_ip,
+      "user_agent" => request.user_agent
+    }
+
+    rows = events.map do |ev|
+      ev = ev.is_a?(Hash) ? ev : { "message" => ev.to_s }
+
+      occurred_at =
+        parse_time(ev["ts"] || ev["occurred_at"]) ||
+        parse_time(envelope["ts"] || envelope["sent_at"]) ||
+        now
+
+      level = ev["level"].to_s.presence
+
+      kind = ev["kind"].to_s.presence
+      base_message =
+        ev["message"].to_s.presence ||
+        kind ||
+        "(no message)"
+
+      # Helpful, consistent summary line (kept reasonably short for list views)
+      message =
+        if kind.present? && ev["message"].to_s.presence
+          "[#{kind}] #{base_message}"
+        else
+          base_message
+        end
+
+      message = message.to_s
+      message = message[0, 4000] if message.length > 4000
+
+      # Store *everything*:
+      # - envelope (sent_at, kiosk_id, kiosk, etc.)
+      # - event (all the detailed fields like lineno, colno, tab_url, stack, etc.)
+      # - request metadata (ip/ua)
+      raw_payload = {
+        "envelope" => envelope,
+        "event"    => ev,
+        "request"  => request_meta
+      }
+
+      {
+        kiosk_id:     kiosk_id,
+        occurred_at:  occurred_at,
+        level:        level,
+        message:      message,
+        raw_payload:  raw_payload,
+        created_at:   now,
+        updated_at:   now
+      }
     end
 
-    # Single-event mode (your existing behavior)
-    ts = parse_time(payload["ts"]) || Time.zone.now
+    if rows.any?
+      # Rails 6+ bulk insert
+      KioskLog.insert_all!(rows)
+    end
 
-    KioskLog.create!(
-      kiosk_id:    kiosk_id,
-      occurred_at: ts,
-      level:       payload["level"].to_s.presence,
-      message:     payload["message"].to_s.presence,
-      raw_payload: payload
-    )
-
-    render json: { ok: true }
+    render json: { ok: true, inserted: rows.size }
   rescue JSON::ParserError
     render json: { ok: false, error: "invalid JSON" }, status: :bad_request
   end

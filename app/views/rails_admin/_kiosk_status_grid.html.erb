@@ -1,7 +1,6 @@
 <%# app/views/rails_admin/_kiosk_status_grid.html.erb %>
 <%# Live Kiosk Status grid + clickable host rows -> modal w/ heartbeat + logs %>
 
-<%# Tiny guard so dashboard doesn't explode if KioskStatus isn't present in some env %>
 <% if defined?(KioskStatus) %>
   <% user = current_user %>
 
@@ -45,7 +44,7 @@
                      minutes = (seconds % 3600) / 60
                      label   = hours.positive? ? "#{hours}h#{format('%02d', minutes)}m" : "#{minutes}m"
 
-                     active  = (s.state == 'opac') # OPAC == “active”, screensaver == “inactive”
+                     active  = (s.state == 'opac')
                      row_class =
                        if active
                          'bg-success text-white'
@@ -72,9 +71,8 @@
     </div>
   </div>
 
-  <%# --- Host details modal (Bootstrap 5 markup) ---------------------------- %>
   <div class="modal fade" id="kioskHostModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="kioskHostModalTitle">Kiosk</h5>
@@ -87,7 +85,6 @@
     </div>
   </div>
 
-  <%# --- Inline JS (works without touching rails_admin.js). Fetches JSON from /admin/kiosk_hosts/:host.json --- %>
   <script>
     (function () {
       function esc(s) {
@@ -101,6 +98,16 @@
         try { return new Date(t).toLocaleString(); } catch (e) { return String(t); }
       }
 
+      function isUrl(s) {
+        return typeof s === "string" && /^https?:\/\//i.test(s);
+      }
+
+      function linkify(url, label) {
+        if (!isUrl(url)) return "";
+        var text = label || url;
+        return '<a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(text) + '</a>';
+      }
+
       async function fetchHost(host) {
         var url = "/admin/kiosk_hosts/" + encodeURIComponent(host) + ".json";
         var resp = await fetch(url, { headers: { "Accept": "application/json" }, cache: "no-store" });
@@ -108,42 +115,129 @@
         return await resp.json();
       }
 
-      function renderBody(data) {
-        var hb = data.heartbeat || {};
-        var logs = Array.isArray(data.logs) ? data.logs : [];
+      function humanDuration(seconds) {
+        seconds = Number(seconds);
+        if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
 
-        var hbHtml = hb.kiosk_id ? (
+        const units = [
+          ["d",  24 * 60 * 60],
+          ["h",  60 * 60],
+          ["m",  60],
+          ["s",  1],
+        ];
+
+        const parts = [];
+        for (const [label, size] of units) {
+          if (seconds >= size) {
+            const q = Math.floor(seconds / size);
+            seconds = seconds % size;
+            parts.push(`${q}${label}`);
+          }
+        }
+        return parts.join(" ");
+      }
+
+      function renderHeartbeat(hb) {
+        if (!hb || !hb.kiosk_id) {
+          return '<div class="text-muted mb-3">No heartbeat recorded for this host yet.</div>';
+        }
+
+        var lines = [];
+        lines.push('<div><strong>Last seen:</strong> ' + esc(fmtTime(hb.last_seen_at)) + '</div>');
+        lines.push('<div><strong>Uptime:</strong> ' + esc(humanDuration(hb.uptime_seconds)) + '</div>');
+        lines.push('<div><strong>Kiosk service:</strong> ' + esc(hb.kiosk_service ?? "") + '</div>');
+        lines.push('<div><strong>Chromium pids:</strong> ' + esc(hb.chromium_pids ?? "") + '</div>');
+
+        if (hb.chromium_devtools_ok !== undefined && hb.chromium_devtools_ok !== null) {
+          lines.push('<div><strong>DevTools OK:</strong> ' + esc(hb.chromium_devtools_ok) + '</div>');
+        }
+        if (hb.chromium_devtools_http) {
+          lines.push('<div><strong>DevTools HTTP:</strong> ' + esc(hb.chromium_devtools_http) + '</div>');
+        }
+        if (hb.chromium_devtools_ms !== undefined && hb.chromium_devtools_ms !== null) {
+          lines.push('<div><strong>DevTools ms:</strong> ' + esc(hb.chromium_devtools_ms) + '</div>');
+        }
+
+        return (
           '<div class="mb-3">' +
-            '<div><strong>Last seen:</strong> ' + esc(fmtTime(hb.last_seen_at)) + '</div>' +
-            '<div><strong>Uptime:</strong> ' + humanDuration(esc(hb.uptime_seconds) ?? "") + '</div>' +
-            '<div><strong>Kiosk service:</strong> ' + esc(hb.kiosk_service ?? "") + '</div>' +
-            '<div><strong>Chromium pid count:</strong> ' + esc(hb.chromium_pids ?? "") + '</div>' +
-            '<div><strong>DevTools OK:</strong> ' + esc(hb.chromium_devtools_ok) + '</div>' +
-            '<div><strong>DevTools HTTP:</strong> ' + esc(hb.chromium_devtools_http ?? "") + '</div>' +
-            '<div><strong>DevTools ms:</strong> ' + esc(hb.chromium_devtools_ms ?? "") + '</div>' +
+            '<h6 class="mb-2">Heartbeat</h6>' +
+            '<div class="small">' + lines.join("") + '</div>' +
           '</div>'
-        ) : '<div class="text-muted mb-3">No heartbeat recorded for this host yet.</div>';
+        );
+      }
 
-        var logsHtml = logs.length ? (
+      function renderLogItem(l) {
+        var level = (l.level || "").toString();
+        var occurred = fmtTime(l.occurred_at);
+
+        // Badge-ish, but readable
+        var levelClass = "bg-secondary";
+        if (level === "error") levelClass = "bg-danger";
+        else if (level === "warn" || level === "warning") levelClass = "bg-warning text-dark";
+        else if (level === "info") levelClass = "bg-info text-dark";
+
+        var kind = l.kind ? ('<span class="ms-2 text-muted">(' + esc(l.kind) + ')</span>') : "";
+        var where = "";
+        if (l.source || l.lineno || l.colno) {
+          var parts = [];
+          if (l.source) parts.push(esc(l.source));
+          if (l.lineno) parts.push("line " + esc(l.lineno));
+          if (l.colno) parts.push("col " + esc(l.colno));
+          where = '<div class="text-muted small mt-1">' + parts.join(" · ") + "</div>";
+        }
+
+        var links = [];
+        if (l.tab_url) links.push("Tab: " + linkify(l.tab_url, "open"));
+        if (l.href)    links.push("Href: " + linkify(l.href, "open"));
+        var linksHtml = links.length ? '<div class="small mt-1">' + links.join(" &nbsp; ") + "</div>" : "";
+
+        var stackHtml = "";
+        if (l.stack) {
+          stackHtml =
+            '<details class="mt-2">' +
+              '<summary class="small">Stack trace</summary>' +
+              '<pre class="mt-2 p-2 bg-light border rounded small" style="white-space:pre-wrap; max-height:300px; overflow:auto;">' +
+                esc(l.stack) +
+              '</pre>' +
+            '</details>';
+        }
+
+        return (
+          '<div class="list-group-item">' +
+            '<div class="d-flex justify-content-between align-items-start">' +
+              '<div class="me-3">' +
+                '<span class="badge ' + levelClass + '">' + esc(level || "log") + "</span>" +
+                kind +
+              "</div>" +
+              '<div class="text-muted small text-nowrap">' + esc(occurred) + "</div>" +
+            "</div>" +
+            '<div class="mt-2">' + esc(l.message ?? "") + "</div>" +
+            where +
+            linksHtml +
+            stackHtml +
+          "</div>"
+        );
+      }
+
+      function renderLogs(logs) {
+        if (!Array.isArray(logs) || logs.length === 0) {
+          return '<div class="text-muted">No logs recorded for this host yet.</div>';
+        }
+
+        return (
           '<div>' +
-            '<h6>Recent logs</h6>' +
+            '<h6 class="mb-2">Recent logs</h6>' +
             '<div class="list-group">' +
-              logs.map(function (l) {
-                return (
-                  '<div class="list-group-item">' +
-                    '<div class="d-flex justify-content-between">' +
-                      '<span class="text-monospace">' + esc(l.level ?? "") + '</span>' +
-                      '<span class="text-muted">' + esc(fmtTime(l.occurred_at)) + '</span>' +
-                    '</div>' +
-                    '<div>' + esc(l.message ?? "") + '</div>' +
-                  '</div>'
-                );
-              }).join("") +
-            '</div>' +
-          '</div>'
-        ) : '<div class="text-muted">No logs recorded for this host yet.</div>';
+              logs.map(renderLogItem).join("") +
+            "</div>" +
+          "</div>"
+        );
+      }
 
-        return hbHtml + logsHtml;
+      function renderBody(data) {
+        var hb = data.heartbeat || null;
+        var logs = Array.isArray(data.logs) ? data.logs : [];
+        return renderHeartbeat(hb) + renderLogs(logs);
       }
 
       function showModal(title, bodyHtml) {
@@ -155,19 +249,15 @@
         titleEl.textContent = title;
         bodyEl.innerHTML = bodyHtml;
 
-        // Bootstrap 5
         if (window.bootstrap && window.bootstrap.Modal) {
           window.bootstrap.Modal.getOrCreateInstance(modalEl).show();
           return;
         }
-
-        // Bootstrap 4 (jQuery)
         if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
           window.jQuery(modalEl).modal("show");
           return;
         }
 
-        // Last-resort fallback
         modalEl.classList.add("show");
         modalEl.style.display = "block";
       }
@@ -190,31 +280,5 @@
         }
       });
     })();
-
-    function humanDuration(seconds) {
-      seconds = Number(seconds);
-      if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
-
-      const units = [
-        ["y",  365 * 24 * 60 * 60],
-        ["mo", 30  * 24 * 60 * 60],
-        ["w",  7   * 24 * 60 * 60],
-        ["d",  24  * 60 * 60],
-        ["h",  60  * 60],
-        ["m",  60],
-        ["s",  1],
-      ];
-
-      const parts = [];
-      for (const [label, size] of units) {
-        if (seconds >= size) {
-          const q = Math.floor(seconds / size);
-          seconds = seconds % size;
-          parts.push(`${q}${label}`);
-        }
-      }
-      return parts.join(" ");
-    }
-
   </script>
 <% end %>
