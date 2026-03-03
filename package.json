@@ -1,6 +1,7 @@
 {
   "name": "TADLKioskScreensaver",
   "version": "1.0.0",
+  "packageManager": "yarn@1.22.22",
   "main": "index.js",
   "repository": "git@github.com:tadl/TADLKioskScreensaver.git",
   "author": "William Rockwood <wrockwood@tadl.org>",
@@ -11,6 +12,5 @@
   "dependencies": {
     "rails_admin": "3.3.0",
     "sass": "^1.89.2"
-  },
-  "devDependencies": {}
+  }
 }

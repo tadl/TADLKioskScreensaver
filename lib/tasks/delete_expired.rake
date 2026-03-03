@@ -6,11 +6,11 @@ namespace :slides do
     cutoff = 1.week.ago.to_date
 
     expired = Slide
-      .where("end_date IS NOT NULL AND end_date < ?", cutoff)
+      .where("end_date IS NOT NULL AND end_date <= ?", cutoff)
 
     total = expired.count
     if total.zero?
-      puts "✅ No slides expired before #{cutoff}."
+      puts "✅ No slides expired on or before #{cutoff}."
       next
     end
 
@@ -19,6 +19,6 @@ namespace :slides do
       slide.destroy
     end
 
-    puts "✅ Deleted #{total} expired slide#{'s' unless total == 1} (expired before #{cutoff})."
+    puts "✅ Deleted #{total} expired slide#{'s' unless total == 1} (expired on or before #{cutoff})."
   end
 end

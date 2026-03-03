@@ -27,6 +27,20 @@
       "postdeploy": "bundle exec rails db:seed && bundle exec rake assets:precompile"
     }
   },
+  "cron": [
+    {
+      "command": "bundle exec rake slides:expire",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "command": "bundle exec rake slides:delete_expired",
+      "schedule": "10 2 * * *"
+    },
+    {
+      "command": "bundle exec rake kiosk_logs:purge_old",
+      "schedule": "20 2 * * *"
+    }
+  ],
   "buildpacks": [
     { "url": "herokuk/nodejs" },
     { "url": "heroku/ruby" }
