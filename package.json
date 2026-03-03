@@ -2,6 +2,10 @@
   "name": "TADLKioskScreensaver",
   "version": "1.0.0",
   "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=22 <25",
+    "yarn": "1.22.22"
+  },
   "main": "index.js",
   "repository": "git@github.com:tadl/TADLKioskScreensaver.git",
   "author": "William Rockwood <wrockwood@tadl.org>",
