@@ -4,8 +4,17 @@
 # model remove the "{}" from the fixture names and add the columns immediately
 # below each fixture, per the syntax in the comments below
 #
-one: {}
-# column: value
-#
-two: {}
+one:
+  email: admin@example.com
+  encrypted_password: <%= "x" * 60 %>
+  name: Admin User
+  admin: true
+  image_url: https://example.com/admin.png
+
+two:
+  email: staff@example.com
+  encrypted_password: <%= "y" * 60 %>
+  name: Staff User
+  admin: false
+  image_url: https://example.com/staff.png
 # column: value

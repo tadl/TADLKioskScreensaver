@@ -1,15 +1,15 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
 
 one:
-  title: MyString
-  link: MyString
-  display_seconds: 1
+  title: Welcome
+  link: https://www.tadl.org/welcome
+  display_seconds: 10
   start_date: 2025-06-17
-  end_date: 2025-06-17
+  end_date: 2026-12-31
 
 two:
-  title: MyString
-  link: MyString
-  display_seconds: 1
+  title: Events
+  link: https://www.tadl.org/events
+  display_seconds: 15
   start_date: 2025-06-17
-  end_date: 2025-06-17
+  end_date: 2026-12-31
