@@ -1,0 +1,7 @@
+<% chart = kiosk_usage_chart_payload(sessions, start_date, end_date) %>
+<canvas
+  id="<%= chart_id %>"
+  height="70"
+  data-kiosk-usage-chart
+  data-chart-labels="<%= chart[:labels].to_json %>"
+  data-chart-data="<%= chart[:data].to_json %>"></canvas>

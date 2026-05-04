@@ -7,7 +7,6 @@ class SessionsController < ApplicationController
     user = User.from_omniauth(auth)
     if user
       session[:user_id] = user.id
-      session[:admin]   = user.admin?
       flash.discard
       redirect_to rails_admin.dashboard_path
     else
@@ -27,4 +26,3 @@ class SessionsController < ApplicationController
     redirect_to root_path
   end
 end
-

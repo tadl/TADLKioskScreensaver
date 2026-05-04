@@ -13,7 +13,7 @@
     "build:css": "sass --quiet-deps ./app/assets/stylesheets/application.sass.scss:./app/assets/builds/application.css ./app/assets/stylesheets/rails_admin.scss:./app/assets/builds/rails_admin.css --no-source-map --load-path=node_modules"
   },
   "resolutions": {
-    "@hotwired/turbo": "8.0.21"
+    "@hotwired/turbo": "8.0.23"
   },
   "dependencies": {
     "rails_admin": "3.3.0",

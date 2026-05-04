@@ -17,37 +17,17 @@
 
 <%# ----- Date and preset logic ----- %>
 <%
-  today        = Date.current
-  yesterday    = (today - 1.day)..(today - 1.day)
-  last_7_days  = (today - 6.days)..today
-  last_30_days = (today - 29.days)..today
-  curr_month   = today.beginning_of_month..today
-  prev_month   = (today - 1.month).beginning_of_month..(today - 1.month).end_of_month
-  curr_year    = today.beginning_of_year..today
-  prev_year    = today.last_year.beginning_of_year..today.last_year.end_of_year
+  presets = kiosk_usage_presets
+  last_30_days = presets["last_30_days"]
 
   # Current range (fallback to last 30)
-  start_date   = params[:start].present? ? Date.parse(params[:start]) : last_30_days.begin
-  end_date     = params[:end].present?   ? Date.parse(params[:end])   : last_30_days.end
-
-  presets = {
-    "today"          => (today..today),
-    "yesterday"      => yesterday,
-    "last_7_days"    => last_7_days,
-    "last_30_days"   => last_30_days,
-    "current_month"  => curr_month,
-    "previous_month" => prev_month,
-    "current_year"   => curr_year,
-    "previous_year"  => prev_year
-  }
+  start_date   = safe_date_param(params[:start], last_30_days.begin)
+  end_date     = safe_date_param(params[:end], last_30_days.end)
 
   # Detect current preset (or custom)
   param_preset     = params[:preset_range].presence
   detected_preset  = presets.find { |_k, r| r.begin == start_date && r.end == end_date }&.first
   selected_preset  = param_preset || detected_preset || "custom"
-
-  # tiny helper for dropdown values
-  def range_value(r) = "#{r.begin}|#{r.end}"
 
   sessions = KioskSession
     .includes(kiosk: :kiosk_group)
@@ -89,8 +69,6 @@
     grouped = sessions_to_show.group_by { |s| s.kiosk&.name || s.kiosk_code }
       .transform_values { |kiosk_sessions| kiosk_sessions.group_by(&:host) }
   end
-
-  single_day = (start_date == end_date)
 %>
 
 <div class="card mt-4">
@@ -108,14 +86,14 @@
       <label class="mr-2 font-weight-bold">Date Range:</label>
       <%= select_tag :preset_range,
             options_for_select([
-              ['Today',            "today:#{range_value(presets['today'])}"],
-              ['Yesterday',        "yesterday:#{range_value(presets['yesterday'])}"],
-              ['Last 7 Days',      "last_7_days:#{range_value(presets['last_7_days'])}"],
-              ['Last 30 Days',     "last_30_days:#{range_value(presets['last_30_days'])}"],
-              ['Current Month',    "current_month:#{range_value(presets['current_month'])}"],
-              ['Previous Month',   "previous_month:#{range_value(presets['previous_month'])}"],
-              ['Current Year',     "current_year:#{range_value(presets['current_year'])}"],
-              ['Previous Year',    "previous_year:#{range_value(presets['previous_year'])}"],
+              ['Today',            "today:#{date_range_value(presets['today'])}"],
+              ['Yesterday',        "yesterday:#{date_range_value(presets['yesterday'])}"],
+              ['Last 7 Days',      "last_7_days:#{date_range_value(presets['last_7_days'])}"],
+              ['Last 30 Days',     "last_30_days:#{date_range_value(presets['last_30_days'])}"],
+              ['Current Month',    "current_month:#{date_range_value(presets['current_month'])}"],
+              ['Previous Month',   "previous_month:#{date_range_value(presets['previous_month'])}"],
+              ['Current Year',     "current_year:#{date_range_value(presets['current_year'])}"],
+              ['Previous Year',    "previous_year:#{date_range_value(presets['previous_year'])}"],
               ['Custom…',          "custom:"]
             ].map { |label, val|
               key = val.split(':',2).first
@@ -134,66 +112,6 @@
       </span>
     <% end %>
 
-    <script>
-      function applyPresetRange(select) {
-        const form = document.getElementById('filtersForm');
-        const custom = document.getElementById('customDates');
-        const [key, pair] = (select.value || '').split(':', 2);
-
-        // Keep preset in params
-        const hidden = ensureHidden(form, 'preset_range');
-        hidden.value = key;
-
-        if (key === 'custom') {
-          custom.style.display = '';
-          return;
-        }
-
-        custom.style.display = 'none';
-        const [start, end] = (pair || '').split('|');
-        setInputValue(form, 'start', start);
-        setInputValue(form, 'end', end);
-        form.requestSubmit();
-      }
-
-      function setInputValue(form, name, val) {
-        let input = form.querySelector(`[name="${name}"]`);
-        if (!input) {
-          input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = name;
-          form.appendChild(input);
-        }
-        input.value = val;
-      }
-
-      function ensureHidden(form, name) {
-        let input = form.querySelector(`input[type="hidden"][name="${name}"]`);
-        if (!input) {
-          input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = name;
-          form.appendChild(input);
-        }
-        return input;
-      }
-
-      document.addEventListener('turbo:load', syncCustomDatesVisibility);
-      document.addEventListener('DOMContentLoaded', syncCustomDatesVisibility);
-      function syncCustomDatesVisibility() {
-        const select = document.getElementById('presetRange');
-        if (!select) return;
-        const key = (select.value || '').split(':', 1)[0];
-        const custom = document.getElementById('customDates');
-        if (custom) custom.style.display = (key === 'custom') ? '' : 'none';
-        const form = document.getElementById('filtersForm');
-        if (form) {
-          const hidden = ensureHidden(form, 'preset_range');
-          hidden.value = key;
-        }
-      }
-    </script>
-
     <% if grouped.any? %>
       <% if selected_group == all_key %>
         <% # Order groups by total sessions desc so the "top" one is first %>
@@ -206,19 +124,6 @@
             <% group_session_count = kiosks.values.flat_map(&:values).flatten.size %>
             <% sessions_flat = kiosks.values.flat_map(&:values).flatten %>
             <% expanded = (i == 0) %>
-
-            <%# --- Chart Data --- %>
-            <% if single_day %>
-              <% hours = (0..23).to_a %>
-              <% hour_counts = hours.map { |h| sessions_flat.count { |s| s.started_at.hour == h && s.started_at.to_date == start_date } } %>
-              <% chart_labels = hours.map { |h| "#{h}:00" } %>
-              <% chart_data = hour_counts %>
-            <% else %>
-              <% days = (start_date..end_date).to_a %>
-              <% day_counts = days.map { |d| sessions_flat.count { |s| s.started_at.to_date == d } } %>
-              <% chart_labels = days.map { |d| d.strftime("%b %-d") } %>
-              <% chart_data = day_counts %>
-            <% end %>
 
             <div class="accordion-item">
               <h2 class="accordion-header" id="<%= "#{group_id}Header" %>">
@@ -237,71 +142,20 @@
                    data-bs-parent="#kioskGroupAccordion">
                 <div class="accordion-body">
                   <div>
-                    <canvas id="chart-<%= group_id %>" height="70"></canvas>
+                    <%= render "rails_admin/kiosk_usage_chart",
+                      chart_id: "chart-#{group_id}",
+                      sessions: sessions_flat,
+                      start_date: start_date,
+                      end_date: end_date %>
                   </div>
-                  <script>
-                    document.addEventListener('turbo:load', function() {
-                      var ctx = document.getElementById('chart-<%= group_id %>');
-                      if (ctx) {
-                        if (ctx.chartInstance) { ctx.chartInstance.destroy(); }
-                        ctx.chartInstance = new Chart(ctx, {
-                          type: 'line',
-                          data: {
-                            labels: <%= raw chart_labels.to_json %>,
-                            datasets: [{
-                              label: 'Sessions',
-                              data: <%= raw chart_data.to_json %>,
-                              fill: false,
-                              borderColor: 'rgb(54, 162, 235)',
-                              tension: 0.15,
-                              pointRadius: 2
-                            }]
-                          },
-                          options: {
-                            responsive: true,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                              y: { beginAtZero: true, ticks: { precision: 0 } }
-                            }
-                          }
-                        });
-                      }
-                    });
-                  </script>
                   <% kiosks.each do |kiosk_name, hosts| %>
                     <% kiosk_session_count = hosts.values.flatten.size %>
                     <h6 class="mt-3"><%= kiosk_name %> (<%= kiosk_session_count %> sessions)</h6>
-                    <table class="table table-sm mb-4">
-                      <thead>
-                        <tr>
-                          <th>Host</th>
-                          <th>Sessions</th>
-                          <th>First Session</th>
-                          <th>Last Session</th>
-                          <th>Utilization</th>
-                          <th>Avg Duration</th>
-                          <th>Total Minutes</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <% hosts.sort.each do |host, host_sessions| %>
-                          <% durations = host_sessions.map(&:session_duration).compact %>
-                          <% total_min = durations.any? ? (durations.sum / 60.0) : 0 %>
-                          <% location = group_obj.slug && location_for_group_slug(group_obj.slug) %>
-                          <% open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil %>
-                          <% util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil %>
-                          <tr>
-                            <td><%= host %></td>
-                            <td><%= host_sessions.count %></td>
-                            <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
-                            <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
-                            <td><%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %></td>
-                            <td><%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %></td>
-                            <td><%= durations.any? ? total_min.round(1) : "-" %></td>
-                          </tr>
-                        <% end %>
-                      </tbody>
-                    </table>
+                    <%= render "rails_admin/kiosk_usage_host_table",
+                      hosts: hosts,
+                      start_date: start_date,
+                      end_date: end_date,
+                      group_obj: group_obj %>
                   <% end %>
                 </div>
               </div>
@@ -312,84 +166,19 @@
         <% grouped.each_with_index do |(kiosk_name, hosts), k| %>
           <% kiosk_session_count = hosts.values.flatten.size %>
           <% kiosk_sessions = hosts.values.flatten %>
-          <% if single_day %>
-            <% hours = (0..23).to_a %>
-            <% hour_counts = hours.map { |h| kiosk_sessions.count { |s| s.started_at.hour == h && s.started_at.to_date == start_date } } %>
-            <% chart_labels = hours.map { |h| "#{h}:00" } %>
-            <% chart_data = hour_counts %>
-          <% else %>
-            <% days = (start_date..end_date).to_a %>
-            <% day_counts = days.map { |d| kiosk_sessions.count { |s| s.started_at.to_date == d } } %>
-            <% chart_labels = days.map { |d| d.strftime("%b %-d") } %>
-            <% chart_data = day_counts %>
-          <% end %>
           <div class="mt-4">
             <div>
-              <canvas id="chart-kiosk-<%= k %>" height="70"></canvas>
+              <%= render "rails_admin/kiosk_usage_chart",
+                chart_id: "chart-kiosk-#{k}",
+                sessions: kiosk_sessions,
+                start_date: start_date,
+                end_date: end_date %>
             </div>
-            <script>
-              document.addEventListener('turbo:load', function() {
-                var ctx = document.getElementById('chart-kiosk-<%= k %>');
-                if (ctx) {
-                  if (ctx.chartInstance) { ctx.chartInstance.destroy(); }
-                  ctx.chartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                      labels: <%= raw chart_labels.to_json %>,
-                      datasets: [{
-                        label: 'Sessions',
-                        data: <%= raw chart_data.to_json %>,
-                        fill: false,
-                        borderColor: 'rgb(54, 162, 235)',
-                        tension: 0.15,
-                        pointRadius: 2
-                      }]
-                    },
-                    options: {
-                      responsive: true,
-                      plugins: { legend: { display: false } },
-                      scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0 } }
-                      }
-                    }
-                  });
-                }
-              });
-            </script>
             <h6 class="border-bottom pb-1"><%= kiosk_name %> (<%= kiosk_session_count %> sessions)</h6>
-            <table class="table table-sm mb-4">
-              <thead>
-                <tr>
-                  <th>Host</th>
-                  <th>Sessions</th>
-                  <th>First Session</th>
-                  <th>Last Session</th>
-                  <th>Utilization</th>
-                  <th>Avg Duration</th>
-                  <th>Total Minutes</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% hosts.sort.each do |host, host_sessions| %>
-                  <% durations = host_sessions.map(&:session_duration).compact %>
-                  <% total_min = durations.any? ? (durations.sum / 60.0) : 0 %>
-                  <% kiosk_obj = host_sessions.first.kiosk %>
-                  <% group_obj = kiosk_obj&.kiosk_group %>
-                  <% location = group_obj&.slug && location_for_group_slug(group_obj.slug) %>
-                  <% open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil %>
-                  <% util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil %>
-                  <tr>
-                    <td><%= host %></td>
-                    <td><%= host_sessions.count %></td>
-                    <td><%= host_sessions.map(&:started_at).min&.strftime("%Y-%m-%d %H:%M") %></td>
-                    <td><%= host_sessions.map(&:ended_at).compact.max&.strftime("%Y-%m-%d %H:%M") %></td>
-                    <td><%= util_pct ? "#{util_pct}%" : "&mdash;".html_safe %></td>
-                    <td><%= durations.any? ? "#{(durations.sum / durations.size / 60).round(1)} min" : "-" %></td>
-                    <td><%= durations.any? ? total_min.round(1) : "-" %></td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
+            <%= render "rails_admin/kiosk_usage_host_table",
+              hosts: hosts,
+              start_date: start_date,
+              end_date: end_date %>
           </div>
         <% end %>
       <% end %>

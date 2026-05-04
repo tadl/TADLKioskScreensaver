@@ -5,3 +5,4 @@
 //= link rails_admin.css
 //= link rails_admin_custom.css
 //= link rails_admin.js
+//= link rails_admin_kiosks.js

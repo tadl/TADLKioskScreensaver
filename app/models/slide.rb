@@ -17,6 +17,20 @@ class Slide < ApplicationRecord
   validate  :image_must_be_exactly_1080p, if: -> { image.attached? || pending_attachable.present? }
 
   scope :fallbacks, -> { where(fallback: true) }
+  scope :active_on, ->(date) {
+    where("start_date IS NULL OR start_date <= ?", date)
+      .where("end_date IS NULL OR end_date >= ?", date)
+  }
+
+  def self.screensaver_payload(slides, base_url)
+    slides.map do |slide|
+      {
+        url: Rails.application.routes.url_helpers.rails_blob_url(slide.image, host: base_url),
+        duration: slide.display_seconds,
+        title: slide.title
+      }
+    end
+  end
 
   # ——————————————————————————————————————————
   # Helpers

@@ -4,7 +4,8 @@
     <%= render "layouts/rails_admin/head" %>
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	    <%= javascript_include_tag "rails_admin_kiosks", defer: true, data: { turbo_track: "reload" } %>
 
     <!-- Font Awesome via CSS only (no JS, so RailsAdmin widgets keep working) -->
     <link

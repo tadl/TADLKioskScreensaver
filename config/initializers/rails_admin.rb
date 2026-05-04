@@ -45,6 +45,13 @@ RailsAdmin.config do |config|
     end
   end
 
+  valid_slide_scope = lambda do |scope|
+    scope
+      .joins(image_attachment: :blob)
+      .where("(active_storage_blobs.metadata::json->>'width') = '1920'")
+      .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
+  end
+
   # == Actions ==
   config.actions do
     dashboard
@@ -261,19 +268,16 @@ RailsAdmin.config do |config|
       field :catalog_url
       field :location do
         read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
-      end
-      field :kiosk_group
-      field :slides do
-        help 'Only slides at exactly 1920×1080 are available here.'
-        associated_collection_scope do
-          Proc.new do |scope|
-            scope
-              .joins(image_attachment: :blob)
-              .where("(active_storage_blobs.metadata::json->>'width') = '1920'")
-              .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
-          end
-        end
-      end
+	      end
+	      field :kiosk_group
+	      field :slides do
+	        help 'Only slides at exactly 1920×1080 are available here.'
+	        associated_collection_scope do
+	          Proc.new do |scope|
+	            valid_slide_scope.call(scope)
+	          end
+	        end
+	      end
     end
 
     edit do
@@ -310,18 +314,15 @@ RailsAdmin.config do |config|
         end
       end
 
-      field :slides do
-        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
-        help 'Only slides at exactly 1920×1080 are available here.'
-        associated_collection_scope do
-          Proc.new do |scope|
-            scope
-              .joins(image_attachment: :blob)
-              .where("(active_storage_blobs.metadata::json->>'width') = '1920'")
-              .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
-          end
-        end
-      end
+	      field :slides do
+	        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
+	        help 'Only slides at exactly 1920×1080 are available here.'
+	        associated_collection_scope do
+	          Proc.new do |scope|
+	            valid_slide_scope.call(scope)
+	          end
+	        end
+	      end
 
       field :location do
         read_only { !bindings[:controller].current_ability.can?(:manage, bindings[:object]) }

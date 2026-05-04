@@ -1,0 +1,27 @@
+<table class="table table-sm mb-4">
+  <thead>
+    <tr>
+      <th>Host</th>
+      <th>Sessions</th>
+      <th>First Session</th>
+      <th>Last Session</th>
+      <th>Utilization</th>
+      <th>Avg Duration</th>
+      <th>Total Minutes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% hosts.sort.each do |host, host_sessions| %>
+      <% stats = kiosk_usage_host_stats(host_sessions, start_date, end_date, local_assigns[:group_obj]) %>
+      <tr>
+        <td><%= host %></td>
+        <td><%= stats[:count] %></td>
+        <td><%= stats[:first_started_at]&.strftime("%Y-%m-%d %H:%M") %></td>
+        <td><%= stats[:last_ended_at]&.strftime("%Y-%m-%d %H:%M") %></td>
+        <td><%= stats[:utilization_percent] ? "#{stats[:utilization_percent]}%" : "&mdash;".html_safe %></td>
+        <td><%= stats[:average_minutes] ? "#{stats[:average_minutes]} min" : "-" %></td>
+        <td><%= stats[:total_minutes] || "-" %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

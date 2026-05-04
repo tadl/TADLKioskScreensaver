@@ -75,4 +75,64 @@ module ApplicationHelper
 
     parts.join(" ")
   end
+
+  def kiosk_usage_presets(today = Date.current)
+    {
+      "today" => (today..today),
+      "yesterday" => ((today - 1.day)..(today - 1.day)),
+      "last_7_days" => ((today - 6.days)..today),
+      "last_30_days" => ((today - 29.days)..today),
+      "current_month" => (today.beginning_of_month..today),
+      "previous_month" => ((today - 1.month).beginning_of_month..(today - 1.month).end_of_month),
+      "current_year" => (today.beginning_of_year..today),
+      "previous_year" => (today.last_year.beginning_of_year..today.last_year.end_of_year)
+    }
+  end
+
+  def date_range_value(range)
+    "#{range.begin}|#{range.end}"
+  end
+
+  def safe_date_param(value, fallback)
+    value.present? ? Date.parse(value) : fallback
+  rescue ArgumentError, TypeError
+    fallback
+  end
+
+  def kiosk_usage_chart_payload(sessions, start_date, end_date)
+    sessions = Array(sessions)
+
+    if start_date == end_date
+      hours = (0..23).to_a
+      {
+        labels: hours.map { |hour| "#{hour}:00" },
+        data: hours.map { |hour| sessions.count { |session| session.started_at.hour == hour && session.started_at.to_date == start_date } }
+      }
+    else
+      days = (start_date..end_date).to_a
+      {
+        labels: days.map { |day| day.strftime("%b %-d") },
+        data: days.map { |day| sessions.count { |session| session.started_at.to_date == day } }
+      }
+    end
+  end
+
+  def kiosk_usage_host_stats(host_sessions, start_date, end_date, group_obj = nil)
+    durations = host_sessions.map(&:session_duration).compact
+    total_min = durations.any? ? (durations.sum / 60.0) : 0
+
+    group_obj ||= host_sessions.first&.kiosk&.kiosk_group
+    location = group_obj&.slug && location_for_group_slug(group_obj.slug)
+    open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil
+    util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil
+
+    {
+      count: host_sessions.count,
+      first_started_at: host_sessions.map(&:started_at).min,
+      last_ended_at: host_sessions.map(&:ended_at).compact.max,
+      utilization_percent: util_pct,
+      average_minutes: durations.any? ? (durations.sum / durations.size / 60).round(1) : nil,
+      total_minutes: durations.any? ? total_min.round(1) : nil
+    }
+  end
 end

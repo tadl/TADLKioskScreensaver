@@ -30,15 +30,9 @@ class ScreensaverController < ApplicationController
     today  = Date.current
 
     # Record state: entering screensaver
-    upsert_kiosk_status(@kiosk, host, :screensaver) if host.present?
+    KioskStatus.mark!(kiosk: @kiosk, host: host, state: :screensaver) if host.present?
 
-    # Grab slides valid for today, in random order
-    active_slides = @kiosk.slides
-      .where("start_date IS NULL OR start_date <= ?", today)
-      .where("end_date   IS NULL OR end_date   >= ?", today)
-      .order(Arel.sql("RANDOM()"))
-
-    @slides = active_slides.any? ? active_slides : Slide.fallbacks
+    @slides = ScreensaverSlideDeck.new(kiosk: @kiosk, date: today, random: true).slides
     return render(:empty) if @slides.empty?
 
     base        = request.base_url
@@ -46,14 +40,7 @@ class ScreensaverController < ApplicationController
     @exit_url   = Rails.application.routes.url_helpers
                    .exit_screensaver_url(params_hash, host: request.base_url)
 
-    # Build an array of slide data with URLs, durations, and titles
-    @slide_data = @slides.map do |s|
-      {
-        url:      Rails.application.routes.url_helpers.rails_blob_url(s.image, host: base),
-        duration: s.display_seconds,
-        title:    s.title
-      }
-    end
+    @slide_data = Slide.screensaver_payload(@slides, base)
   rescue ActiveRecord::RecordNotFound
     render :empty, status: :bad_request, layout: false
   end
@@ -62,22 +49,7 @@ class ScreensaverController < ApplicationController
   # Returns JSON: { slides: [ { url, duration, title }, … ] }
   def slides_json
     kiosk = Kiosk.find_by!(slug: params[:kiosk])
-    today = Date.current
-
-    active = kiosk.slides
-      .where("start_date IS NULL OR start_date <= ?", today)
-      .where("end_date   IS NULL OR end_date   >= ?", today)
-
-    slides = active.any? ? active : Slide.fallbacks
-
-    base = request.base_url
-    data = slides.map do |s|
-      {
-        url:      Rails.application.routes.url_helpers.rails_blob_url(s.image, host: base),
-        duration: s.display_seconds,
-        title:    s.title
-      }
-    end
+    data = ScreensaverSlideDeck.new(kiosk: kiosk).payload(request.base_url)
 
     render json: { slides: data }
   rescue ActiveRecord::RecordNotFound
@@ -108,15 +80,9 @@ class ScreensaverController < ApplicationController
       end
     end
 
-    # Record state: exiting to OPAC (active)
-    if host.present? && kiosk_code.present?
-      if (kiosk = Kiosk.find_by(slug: kiosk_code))
-        upsert_kiosk_status(kiosk, host, :opac)
-      end
-    end
-
     kiosk = Kiosk.find_by(slug: kiosk_code)
     if kiosk
+      KioskStatus.mark!(kiosk: kiosk, host: host, state: :opac) if host.present?
       redirect_to kiosk.catalog_url, allow_other_host: true
     else
       redirect_to root_path
@@ -141,34 +107,5 @@ class ScreensaverController < ApplicationController
     else
       redirect_to root_path
     end
-  end
-
-  private
-
-  # For dashboards:
-  # - If state changes (screensaver -> opac or vice versa), update state + timestamp.
-  # - If we *re-enter* the screensaver with the same state (e.g., reboot straight into it),
-  #   bump state_changed_at anyway so the idle clock restarts.
-  def upsert_kiosk_status(kiosk, host, new_state)
-    return unless kiosk && host.present?
-
-    now           = Time.zone.now
-    new_state_str = new_state.to_s
-    ks            = KioskStatus.find_or_initialize_by(kiosk: kiosk, host: host)
-
-    if ks.new_record? || ks.state != new_state_str
-      ks.state            = new_state_str
-      ks.state_changed_at = now
-    elsif new_state_str == "screensaver"
-      # Same state but a fresh screensaver load (e.g., reboot) — treat as new “idle since”
-      ks.state_changed_at = now
-    end
-
-    ks.save! if ks.changed?
-  rescue => e
-    Rails.logger.warn(
-      "[KioskStatus] upsert failed for kiosk=#{kiosk&.id} host=#{host} state=#{new_state}: " \
-      "#{e.class}: #{e.message}"
-    )
   end
 end
