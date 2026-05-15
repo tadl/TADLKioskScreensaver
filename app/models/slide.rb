@@ -68,7 +68,7 @@ class Slide < ApplicationRecord
       if u&.admin? || u&.can?('manage_kioskgroups') || u&.can?('manage_kiosks')
         Kiosk.pluck(:id)
       elsif u
-        Kiosk.where(kiosk_group_id: u.kiosk_group_ids).pluck(:id)
+        u.accessible_kiosk_ids
       else
         Kiosk.pluck(:id)
       end

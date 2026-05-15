@@ -29,6 +29,7 @@ class User < ApplicationRecord
   # associations for permissions
   has_many :user_permissions, dependent: :destroy
   has_many :kiosk_groups, through: :user_permissions
+  has_many :kiosks, through: :user_permissions
   has_many :permissions, through: :user_permissions
 
   after_create :auto_provision_default_permission
@@ -38,6 +39,29 @@ class User < ApplicationRecord
   def can?(perm_name)
     return true if admin?
     permissions.exists?(name: perm_name.to_s)
+  end
+
+  def accessible_kiosks
+    return Kiosk.all if admin? || can?("manage_kioskgroups") || can?("manage_kiosks")
+
+    Kiosk.where(id: accessible_kiosk_ids)
+  end
+
+  def accessible_kiosk_ids
+    return Kiosk.ids if admin? || can?("manage_kioskgroups") || can?("manage_kiosks")
+
+    direct_ids = user_permissions.joins(:kiosks).pluck("kiosks.id")
+    group_ids = kiosk_group_ids
+    group_kiosk_ids = group_ids.any? ? Kiosk.where(kiosk_group_id: group_ids).pluck(:id) : []
+
+    (direct_ids + group_kiosk_ids).uniq
+  end
+
+  def accessible_kiosk_group_ids
+    return KioskGroup.ids if admin? || can?("manage_kioskgroups") || can?("manage_kiosks")
+
+    kiosk_group_ids_from_kiosks = Kiosk.where(id: accessible_kiosk_ids).pluck(:kiosk_group_id)
+    (kiosk_group_ids + kiosk_group_ids_from_kiosks).compact.uniq
   end
 
   private

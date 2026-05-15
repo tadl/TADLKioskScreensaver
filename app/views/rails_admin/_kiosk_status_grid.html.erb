@@ -8,7 +8,7 @@
        if user&.admin?
          Kiosk.all
        else
-         Kiosk.where(kiosk_group_id: user&.kiosk_group_ids.to_a)
+         user.accessible_kiosks
        end %>
 
   <% statuses = KioskStatus
@@ -71,7 +71,7 @@
     </div>
   </div>
 
-	  <div class="modal fade" id="kioskHostModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="kioskHostModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -81,7 +81,7 @@
         <div class="modal-body" id="kioskHostModalBody">
           <div class="text-muted">Loading…</div>
         </div>
-	      </div>
-	    </div>
-	  </div>
-	<% end %>
+      </div>
+    </div>
+  </div>
+<% end %>

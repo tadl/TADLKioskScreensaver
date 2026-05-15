@@ -134,6 +134,13 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
     t.bigint "kiosk_id", null: false
   end
 
+  create_table "kiosks_user_permissions", id: false, force: :cascade do |t|
+    t.bigint "user_permission_id", null: false
+    t.bigint "kiosk_id", null: false
+    t.index ["kiosk_id", "user_permission_id"], name: "idx_on_kiosk_id_user_permission_id_c87732717d"
+    t.index ["user_permission_id", "kiosk_id"], name: "idx_on_user_permission_id_kiosk_id_e645a869c2", unique: true
+  end
+
   create_table "permissions", force: :cascade do |t|
     t.string "name"
     t.text "description"

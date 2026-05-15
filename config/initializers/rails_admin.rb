@@ -110,18 +110,23 @@ RailsAdmin.config do |config|
       field :kiosk_groups do
         pretty_value { bindings[:object].kiosk_groups.map(&:name).join(', ') }
       end
+      field :kiosks do
+        pretty_value { bindings[:object].kiosks.map(&:name).join(', ') }
+      end
     end
 
     create do
       field(:user)          { help 'Pick the Google-OAuth user to grant a role to.' }
       field :permission
-      field(:kiosk_groups)  { help 'Select which kiosk groups this user may manage.' }
+      field(:kiosk_groups)  { help 'Select kiosk groups this user may manage. This grants access to every kiosk in each selected group.' }
+      field(:kiosks)        { help 'Optionally select individual kiosks for narrower access without granting the whole group.' }
     end
 
     edit do
       field(:user)          { read_only true; help 'Users are managed via Google OAuth; you cannot change this here.' }
       field :permission
-      field(:kiosk_groups)  { help 'Select which kiosk groups this user may manage.' }
+      field(:kiosk_groups)  { help 'Select kiosk groups this user may manage. This grants access to every kiosk in each selected group.' }
+      field(:kiosks)        { help 'Optionally select individual kiosks for narrower access without granting the whole group.' }
     end
   end
 
@@ -188,7 +193,7 @@ RailsAdmin.config do |config|
 
     visible do
       u = bindings[:controller].current_user
-      u.admin? || u.can?('manage_kioskgroups')
+      u.admin? || u.can?('manage_kioskgroups') || u.accessible_kiosk_group_ids.any?
     end
 
     list do
@@ -198,7 +203,7 @@ RailsAdmin.config do |config|
         if current_user.admin? || current_user.can?('manage_kioskgroups')
           model.all
         else
-          model.where(id: current_user.kiosk_group_ids)
+          model.where(id: current_user.accessible_kiosk_group_ids)
         end
       end
 
@@ -231,7 +236,7 @@ RailsAdmin.config do |config|
       register_instance_option :scoped_collection do
         user  = bindings[:controller].current_user
         model = bindings[:abstract_model].model
-        scope = user.admin? ? model.all : model.where(kiosk_group_id: user.kiosk_group_ids)
+        scope = user.admin? ? model.all : model.where(id: user.accessible_kiosk_ids)
         scope.includes(:kiosk_group)
       end
 
@@ -450,7 +455,7 @@ RailsAdmin.config do |config|
         associated_collection_scope do
           user = bindings[:controller].current_user
           Proc.new do |scope|
-            user.admin? ? scope.order(:name) : scope.where(kiosk_group_id: user.kiosk_group_ids).order(:name)
+            user.admin? ? scope.order(:name) : scope.where(id: user.accessible_kiosk_ids).order(:name)
           end
         end
       end
@@ -469,7 +474,7 @@ RailsAdmin.config do |config|
         read_only do
           slide = bindings[:object]
           user  = bindings[:controller].current_user
-          !user.admin? && slide.kiosks.where.not(kiosk_group_id: user.kiosk_group_ids).exists?
+          !user.admin? && slide.kiosks.where.not(id: user.accessible_kiosk_ids).exists?
         end
       end
       field :fallback do
@@ -477,7 +482,15 @@ RailsAdmin.config do |config|
         help  'If checked, this slide will show when no other slides are active for a kiosk.'
       end
 
-      field(:kiosks) { help 'You can only pick among your groups—any other existing assignments will be preserved automatically.' }
+      field :kiosks do
+        help 'You can only pick among your assigned kiosks—any other existing assignments will be preserved automatically.'
+        associated_collection_scope do
+          user = bindings[:controller].current_user
+          Proc.new do |scope|
+            user.admin? ? scope.order(:name) : scope.where(id: user.accessible_kiosk_ids).order(:name)
+          end
+        end
+      end
     end
   end
 end

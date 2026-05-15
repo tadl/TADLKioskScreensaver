@@ -4,6 +4,7 @@ class UserPermission < ApplicationRecord
   belongs_to :permission
 
   has_and_belongs_to_many :kiosk_groups
+  has_and_belongs_to_many :kiosks
 
   validates :permission_id, uniqueness: { scope: :user_id }
 

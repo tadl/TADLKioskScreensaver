@@ -18,7 +18,7 @@ class Admin::KioskHostsController < ApplicationController
     head :unauthorized unless current_user
   end
 
-  # Non-admins can only view hosts that currently map (via KioskStatus) to kiosks in their allowed groups.
+  # Non-admins can only view hosts that currently map to kiosks they can access.
   # Admins can view anything.
   def authorize_kiosk_host!
     return if current_user&.admin?
@@ -36,8 +36,7 @@ class Admin::KioskHostsController < ApplicationController
 
     return head :not_found unless ks&.kiosk
 
-    allowed_group_ids = current_user.kiosk_group_ids.to_a
-    head :forbidden unless allowed_group_ids.include?(ks.kiosk.kiosk_group_id)
+    head :forbidden unless current_user.accessible_kiosk_ids.include?(ks.kiosk_id)
   end
 
 end

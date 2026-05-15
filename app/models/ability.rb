@@ -4,7 +4,8 @@ class Ability
 
   def initialize(user)
     user ||= User.new
-    allowed_group_ids = user.kiosk_group_ids
+    allowed_kiosk_ids = user.accessible_kiosk_ids
+    allowed_group_ids = user.accessible_kiosk_group_ids
 
     # 1) Super-admins get everything
     if user.admin? || user.can?('admin')
@@ -32,12 +33,12 @@ class Ability
     # 5) Kiosks
     if user.can?('manage_kiosks')
       can :manage, Kiosk
-    elsif user.can?('manage_slides') && allowed_group_ids.any?
-      can [:read, :update], Kiosk, kiosk_group_id: allowed_group_ids
+    elsif user.can?('manage_slides') && allowed_kiosk_ids.any?
+      can [:read, :update], Kiosk, id: allowed_kiosk_ids
     end
 
     # 6) Slides
-    if allowed_group_ids.any?
+    if allowed_kiosk_ids.any?
       can [:read, :create, :update], Slide
       can :destroy, Slide do |slide|
         user.can?('manage_slides') && slide.kiosk_ids.empty?

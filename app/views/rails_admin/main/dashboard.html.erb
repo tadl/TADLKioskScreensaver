@@ -32,8 +32,10 @@
   sessions = KioskSession
     .includes(kiosk: :kiosk_group)
     .where(started_at: start_date.beginning_of_day..end_date.end_of_day)
+  accessible_kiosks = current_user.admin? ? Kiosk.all : current_user.accessible_kiosks
+  sessions = sessions.where(kiosk_code: accessible_kiosks.select(:slug)) unless current_user.admin?
 
-  accessible_groups = current_user.admin? ? KioskGroup.all : current_user.kiosk_groups
+  accessible_groups = current_user.admin? ? KioskGroup.all : KioskGroup.where(id: current_user.accessible_kiosk_group_ids)
   accessible_groups = accessible_groups.order(:name)
   group_ids_with_sessions = sessions.map { |s| s.kiosk&.kiosk_group_id }.compact.uniq
   available_groups = accessible_groups.where(id: group_ids_with_sessions)
@@ -52,8 +54,7 @@
     if selected_group == "all_kiosks" && current_user.admin?
       sessions
     elsif selected_group == "all_my_kiosks"
-      my_ids = current_user.kiosk_groups.pluck(:id)
-      sessions.select { |s| s.kiosk && my_ids.include?(s.kiosk.kiosk_group_id) }
+      sessions
     else
       group = available_groups.find { |g| g.id.to_s == selected_group }
       group ? sessions.select { |s| s.kiosk&.kiosk_group_id == group.id } : []
