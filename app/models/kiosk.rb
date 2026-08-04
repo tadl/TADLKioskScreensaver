@@ -6,10 +6,9 @@ class Kiosk < ApplicationRecord
   validates :slug,        presence: true, uniqueness: true,
                           format: { with: /\A[a-z0-9\-]+\z/ }
   validates :catalog_url, presence: true,
-                          format: { with: /\Ahttps?:\/\// }
+                          format: { with: /\Ahttps?:\/\/.+\z/ }
 
   def slides_count
     slides.size
   end
 end
-

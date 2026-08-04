@@ -83,7 +83,7 @@ class ScreensaverController < ApplicationController
     kiosk = Kiosk.find_by(slug: kiosk_code)
     if kiosk
       KioskStatus.mark!(kiosk: kiosk, host: host, state: :opac) if host.present?
-      redirect_to kiosk.catalog_url, allow_other_host: true
+      redirect_to_catalog(kiosk)
     else
       redirect_to root_path
     end
@@ -103,9 +103,24 @@ class ScreensaverController < ApplicationController
     kiosk = Kiosk.find_by(slug: kiosk_code)
 
     if kiosk
-      redirect_to kiosk.catalog_url, allow_other_host: true
+      redirect_to_catalog(kiosk)
     else
       redirect_to root_path
     end
+  end
+
+  private
+
+  def redirect_to_catalog(kiosk)
+    redirect_to catalog_redirect_url(kiosk), allow_other_host: true
+  rescue URI::InvalidURIError
+    redirect_to root_path
+  end
+
+  def catalog_redirect_url(kiosk)
+    uri = URI.parse(kiosk.catalog_url.to_s)
+    raise URI::InvalidURIError unless uri.is_a?(URI::HTTP) && uri.host.present?
+
+    uri.to_s
   end
 end

@@ -3,7 +3,7 @@
 class KioskStatus < ApplicationRecord
   belongs_to :kiosk
 
-  enum state: { screensaver: 0, opac: 1 }
+  enum :state, { screensaver: 0, opac: 1 }
 
   validates :host, presence: true
   validates :state, presence: true
