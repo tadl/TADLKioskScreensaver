@@ -64,6 +64,34 @@ class User < ApplicationRecord
     (kiosk_group_ids + kiosk_group_ids_from_kiosks).compact.uniq
   end
 
+  def readable_slide_ids
+    return Slide.ids if admin?
+    return [] unless can?("manage_slides")
+
+    Slide.joins(:kiosks)
+      .where(kiosks: { id: accessible_kiosk_ids })
+      .distinct
+      .pluck(:id)
+  end
+
+  def editable_slide_ids
+    return Slide.ids if admin?
+    return [] unless can?("manage_slides")
+
+    allowed_kiosk_ids = accessible_kiosk_ids
+    return [] if allowed_kiosk_ids.empty?
+
+    inaccessible_slide_ids = Slide.joins(:kiosks)
+      .where.not(kiosks: { id: allowed_kiosk_ids })
+      .select(:id)
+
+    Slide.joins(:kiosks)
+      .where(kiosks: { id: allowed_kiosk_ids })
+      .where.not(id: inaccessible_slide_ids)
+      .distinct
+      .pluck(:id)
+  end
+
   private
 
   def auto_provision_default_permission

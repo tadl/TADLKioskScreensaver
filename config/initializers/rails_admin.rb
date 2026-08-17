@@ -275,14 +275,16 @@ RailsAdmin.config do |config|
         read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
 	      end
 	      field :kiosk_group
-	      field :slides do
-	        help 'Only slides at exactly 1920×1080 are available here.'
-	        associated_collection_scope do
-	          Proc.new do |scope|
-	            valid_slide_scope.call(scope)
-	          end
-	        end
-	      end
+      field :slides do
+        help 'Only slides at exactly 1920×1080 are available here.'
+        associated_collection_scope do
+          user = bindings[:controller].current_user
+          Proc.new do |scope|
+            valid_scope = valid_slide_scope.call(scope)
+            user.admin? ? valid_scope : valid_scope.where(id: user.readable_slide_ids)
+          end
+        end
+      end
     end
 
     edit do
@@ -323,8 +325,10 @@ RailsAdmin.config do |config|
 	        read_only { !bindings[:controller].current_ability.can?(:update, bindings[:object]) }
 	        help 'Only slides at exactly 1920×1080 are available here.'
 	        associated_collection_scope do
+	          user = bindings[:controller].current_user
 	          Proc.new do |scope|
-	            valid_slide_scope.call(scope)
+	            valid_scope = valid_slide_scope.call(scope)
+	            user.admin? ? valid_scope : valid_scope.where(id: user.readable_slide_ids)
 	          end
 	        end
 	      end

@@ -37,17 +37,12 @@ class Ability
       can [:read, :update], Kiosk, id: allowed_kiosk_ids
     end
 
-    # 6) Slides
-    if allowed_kiosk_ids.any?
-      can [:read, :create, :update], Slide
-      can :destroy, Slide do |slide|
-        user.can?('manage_slides') && slide.kiosk_ids.empty?
-      end
-    end
-
-    # 7) Never destroy an in-use slide
-    cannot :destroy, Slide do |slide|
-      slide.kiosk_ids.any?
+    # 6) Slides. Shared/global slides remain admin-controlled because changing
+    # their content would also change kiosks outside the user's scope.
+    if user.can?('manage_slides') && allowed_kiosk_ids.any?
+      can :create, Slide
+      can :read, Slide, id: user.readable_slide_ids
+      can :update, Slide, id: user.editable_slide_ids
     end
   end
 end
