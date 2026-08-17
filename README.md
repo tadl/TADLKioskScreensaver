@@ -17,7 +17,7 @@
 
 ## Technology Stack
 
-* Ruby 3.2.8, Rails 7.1.5
+* Ruby 3.4.10, Rails 8.1
 * PostgreSQL
 * RailsAdmin 3.3.0
 * CanCanCan
@@ -30,9 +30,9 @@
 
 ### Prerequisites
 
-* Ruby 3.2.x
+* Ruby 3.4.10
 * PostgreSQL
-* Bundler (`gem install bundler`)
+* Bundler 2.6.9
 
 ### Setup (Development)
 
@@ -51,19 +51,19 @@
 
 3. **Environment variables**
 
-   * Copy `.env.example` to `.env` and fill in credentials (DATABASE\_URL, SECRET\_KEY\_BASE, etc.).
+   * Copy `.env.example` to `.env` and configure Google OAuth, `KIOSK_API_PSK`, `LOCATION_DATA_URL`, and any database overrides.
    * Uses [dotenv](https://github.com/bkeepers/dotenv) to load `.env` in development.
 
 4. **Database setup**
 
    ```bash
-   rails db:create db:migrate
+   bin/rails db:prepare
    ```
 
 5. **Start server**
 
    ```bash
-   bin/rails server
+   bin/dev
    ```
 
 6. **Access admin**
@@ -75,6 +75,17 @@
 
 * Environment variables live in `.env` (loaded via dotenv).
 * ActiveStorage uses local disk (in `storage/`).
+* Kiosk heartbeat and log clients authenticate with the `X-Kiosk-Key` header using `KIOSK_API_PSK`.
+
+### Initial administrator
+
+After the administrator has signed in once with Google, bootstrap the account from a Rails console or runner:
+
+```bash
+bin/rails runner 'User.find_by!(email: "you@example.com").update!(admin: true)'
+```
+
+Production deployments must mount `storage/` persistently so uploaded slides survive container replacement.
 
 ## Contributing
 
@@ -85,4 +96,3 @@
 ---
 
 *This application powers digital signage for library kiosks. Adjust configurations as needed per environment.*
-
