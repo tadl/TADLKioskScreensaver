@@ -65,6 +65,8 @@ ActiveRecord::Schema[8.1].define(version: 2025062600000001) do
   create_table "kiosk_groups_user_permissions", id: false, force: :cascade do |t|
     t.bigint "kiosk_group_id", null: false
     t.bigint "user_permission_id", null: false
+    t.index ["kiosk_group_id", "user_permission_id"], name: "index_group_permissions_on_group_and_permission"
+    t.index ["user_permission_id", "kiosk_group_id"], name: "index_group_permissions_on_permission_and_group", unique: true
   end
 
   create_table "kiosk_heartbeats", force: :cascade do |t|
@@ -105,6 +107,7 @@ ActiveRecord::Schema[8.1].define(version: 2025062600000001) do
     t.datetime "started_at", null: false
     t.datetime "updated_at", null: false
     t.index ["kiosk_code", "host", "started_at"], name: "index_kiosk_sessions_on_kiosk_code_and_host_and_started_at"
+    t.index ["kiosk_code", "host"], name: "index_kiosk_sessions_on_open_host", unique: true, where: "((ended_at IS NULL) AND (host IS NOT NULL))"
     t.index ["kiosk_code", "started_at"], name: "index_kiosk_sessions_on_kiosk_code_and_started_at"
     t.index ["started_at"], name: "index_kiosk_sessions_on_started_at"
   end
@@ -135,6 +138,8 @@ ActiveRecord::Schema[8.1].define(version: 2025062600000001) do
   create_table "kiosks_slides", id: false, force: :cascade do |t|
     t.bigint "kiosk_id", null: false
     t.bigint "slide_id", null: false
+    t.index ["kiosk_id", "slide_id"], name: "index_kiosks_slides_on_kiosk_and_slide", unique: true
+    t.index ["slide_id", "kiosk_id"], name: "index_kiosks_slides_on_slide_and_kiosk"
   end
 
   create_table "kiosks_user_permissions", id: false, force: :cascade do |t|
@@ -149,6 +154,7 @@ ActiveRecord::Schema[8.1].define(version: 2025062600000001) do
     t.text "description"
     t.string "name"
     t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_permissions_on_name", unique: true
   end
 
   create_table "slides", force: :cascade do |t|
@@ -168,6 +174,7 @@ ActiveRecord::Schema[8.1].define(version: 2025062600000001) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["permission_id"], name: "index_user_permissions_on_permission_id"
+    t.index ["user_id", "permission_id"], name: "index_user_permissions_on_user_and_permission", unique: true
     t.index ["user_id"], name: "index_user_permissions_on_user_id"
   end
 
@@ -188,8 +195,14 @@ ActiveRecord::Schema[8.1].define(version: 2025062600000001) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "kiosk_groups_user_permissions", "kiosk_groups"
+  add_foreign_key "kiosk_groups_user_permissions", "user_permissions"
   add_foreign_key "kiosk_statuses", "kiosks"
   add_foreign_key "kiosks", "kiosk_groups"
+  add_foreign_key "kiosks_slides", "kiosks"
+  add_foreign_key "kiosks_slides", "slides"
+  add_foreign_key "kiosks_user_permissions", "kiosks"
+  add_foreign_key "kiosks_user_permissions", "user_permissions"
   add_foreign_key "user_permissions", "permissions"
   add_foreign_key "user_permissions", "users"
 end
