@@ -18,4 +18,15 @@ class ApplicationHelperTest < ActionView::TestCase
 
     assert_equal 2.hours, kiosk_session.duration_within(range_start, range_end, now: range_end)
   end
+
+  test "uses the group's location shortname for location data" do
+    group = KioskGroup.new(slug: "display-name", location_shortname: "woodmere")
+    @locations_data = [{ "shortname" => "woodmere", "monday" => "9:00 AM to 5:00 PM" }]
+
+    assert_equal @locations_data.first, location_for_group(group)
+  end
+
+  def locations_data
+    @locations_data || super
+  end
 end

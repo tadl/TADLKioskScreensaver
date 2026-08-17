@@ -3,27 +3,25 @@ require 'net/http'
 require 'json'
 
 module ApplicationHelper
-  # Class variable cache (simple)
-  @@locations_cache = nil
-  @@locations_cache_time = nil
+  LOCATIONS_CACHE_KEY = "kiosk-dashboard/locations/v1"
+  LOCATIONS_CACHE_TTL = 15.minutes
 
   def locations_data
-    if @@locations_cache && @@locations_cache_time && Time.now - @@locations_cache_time < 15.minutes
-      @@locations_cache
-    else
-      url = ENV.fetch("LOCATION_DATA_URL")
-      resp = Net::HTTP.get(URI(url))
-      @@locations_cache = JSON.parse(resp)["locations"]
-      @@locations_cache_time = Time.now
-      @@locations_cache
-    end
+    cached = Rails.cache.read(LOCATIONS_CACHE_KEY)
+    return cached[:locations] if cached && cached[:fetched_at] > LOCATIONS_CACHE_TTL.ago
+
+    locations = fetch_locations_data
+    Rails.cache.write(LOCATIONS_CACHE_KEY, { locations: locations, fetched_at: Time.current })
+    locations
   rescue => e
     Rails.logger.warn("Could not load location data: #{e}")
-    []
+    cached&.fetch(:locations, []) || []
   end
 
-  def location_for_group_slug(slug)
-    locations_data.find { |loc| loc["shortname"] == slug }
+  def location_for_group(group)
+    identifier = group&.respond_to?(:location_shortname) ? group.location_shortname.presence : nil
+    identifier ||= group&.slug
+    locations_data.find { |location| location["shortname"] == identifier }
   end
 
   def open_minutes_for_range(location, start_date, end_date)
@@ -143,7 +141,7 @@ module ApplicationHelper
     total_min = durations.any? ? (durations.sum / 60.0) : 0
 
     group_obj ||= host_sessions.first&.kiosk&.kiosk_group
-    location = group_obj&.slug && location_for_group_slug(group_obj.slug)
+    location = group_obj && location_for_group(group_obj)
     open_min = location ? open_minutes_for_range(location, start_date, end_date) : nil
     util_pct = (open_min && open_min > 0) ? (total_min / open_min * 100).round(1) : nil
 
@@ -155,5 +153,26 @@ module ApplicationHelper
       average_minutes: durations.any? ? (durations.sum / durations.size / 60).round(1) : nil,
       total_minutes: durations.any? ? total_min.round(1) : nil
     }
+  end
+
+
+  private
+
+  def fetch_locations_data
+    uri = URI.parse(ENV.fetch("LOCATION_DATA_URL"))
+    raise URI::InvalidURIError, "location URL must be HTTP(S)" unless uri.is_a?(URI::HTTP) && uri.host.present?
+
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = uri.is_a?(URI::HTTPS)
+    http.open_timeout = 2
+    http.read_timeout = 3
+
+    response = http.request(Net::HTTP::Get.new(uri.request_uri))
+    raise "location request returned HTTP #{response.code}" unless response.is_a?(Net::HTTPSuccess)
+
+    locations = JSON.parse(response.body).fetch("locations")
+    raise "location response must contain an array" unless locations.is_a?(Array)
+
+    locations
   end
 end

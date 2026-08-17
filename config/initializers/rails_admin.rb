@@ -219,18 +219,21 @@ RailsAdmin.config do |config|
 
       field :name
       field :slug
+      field :location_shortname
       field :kiosks
     end
 
     create do
       field :name
       field :slug
+      field(:location_shortname) { help 'Shortname used by the library locations feed for utilization calculations.' }
       field(:kiosks) { help 'Assign existing kiosks to this group.' }
     end
 
     edit do
       field :name
       field :slug
+      field(:location_shortname) { help 'Shortname used by the library locations feed for utilization calculations.' }
       field(:kiosks) { help 'Update which kiosks belong to this group.' }
     end
   end
