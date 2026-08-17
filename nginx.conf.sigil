@@ -30,7 +30,7 @@
     access_log  /var/log/nginx/{{ $.APP }}-access.log;
     error_log   /var/log/nginx/{{ $.APP }}-error.log;
 
-    client_max_body_size   500m;
+    client_max_body_size   25m;
 
     location / {
       gzip                on;

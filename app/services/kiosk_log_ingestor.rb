@@ -3,6 +3,10 @@
 class KioskLogIngestor
   MAX_EVENTS = 500
   MAX_MESSAGE_LENGTH = 4000
+  MAX_STACK_LENGTH = 20_000
+  MAX_URL_LENGTH = 2_048
+  EVENT_KEYS = %w[ts occurred_at level kind message tab_url href source lineno colno stack tab_id].freeze
+  ENVELOPE_KEYS = %w[kiosk_id host ts sent_at version].freeze
 
   def initialize(payload:, kiosk_id:, request_meta:, now: Time.zone.now)
     @payload = payload.is_a?(Hash) ? payload : {}
@@ -32,7 +36,7 @@ class KioskLogIngestor
         message: message_for(event),
         raw_payload: {
           "envelope" => envelope,
-          "event" => event,
+          "event" => sanitized_event(event),
           "request" => request_meta
         },
         created_at: now,
@@ -47,7 +51,7 @@ class KioskLogIngestor
   end
 
   def envelope
-    @envelope ||= payload.except("events")
+    @envelope ||= payload.slice(*ENVELOPE_KEYS).transform_values { |value| bounded_value(value, 1_000) }
   end
 
   def occurred_at_for(event)
@@ -71,8 +75,31 @@ class KioskLogIngestor
   def parse_time(value)
     return nil if value.blank?
 
-    Time.zone.parse(value.to_s)
+    parsed = Time.zone.parse(value.to_s)
+    return nil if parsed < 1.year.ago || parsed > 1.day.from_now
+
+    parsed
   rescue ArgumentError, TypeError
     nil
+  end
+
+  def sanitized_event(event)
+    event.slice(*EVENT_KEYS).to_h do |key, value|
+      limit = case key
+      when "stack" then MAX_STACK_LENGTH
+      when "tab_url", "href", "source" then MAX_URL_LENGTH
+      when "message" then MAX_MESSAGE_LENGTH
+      else 1_000
+      end
+      [key, bounded_value(value, limit)]
+    end
+  end
+
+  def bounded_value(value, limit)
+    case value
+    when String then value.first(limit)
+    when Numeric, TrueClass, FalseClass, NilClass then value
+    else value.to_s.first(limit)
+    end
   end
 end

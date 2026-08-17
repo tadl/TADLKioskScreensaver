@@ -47,4 +47,26 @@ class KioskLogIngestorTest < ActiveSupport::TestCase
 
     assert_equal KioskLogIngestor::MAX_EVENTS, inserted
   end
+
+  test "bounds raw event fields and discards unknown fields" do
+    payload = {
+      "events" => [{
+        "message" => "m" * 5_000,
+        "stack" => "s" * 25_000,
+        "unknown" => "not stored"
+      }]
+    }
+
+    KioskLogIngestor.new(
+      payload: payload,
+      kiosk_id: "nucpac03",
+      request_meta: {},
+      now: Time.current
+    ).insert!
+
+    event = KioskLog.order(:id).last.raw_payload.fetch("event")
+    assert_equal KioskLogIngestor::MAX_MESSAGE_LENGTH, event.fetch("message").length
+    assert_equal KioskLogIngestor::MAX_STACK_LENGTH, event.fetch("stack").length
+    assert_not event.key?("unknown")
+  end
 end

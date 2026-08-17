@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
 class Api::KiosksController < ActionController::API
+  MAX_BODY_BYTES = 1.megabyte
+  MAX_CLOCK_SKEW = 1.day
+  MAX_EVENT_AGE = 1.year
+
+  class InvalidPayload < StandardError; end
+  class PayloadTooLarge < StandardError; end
+
   # If you want Rails logs tagged, etc., you can inherit from ApplicationController,
   # but then you must handle CSRF. ActionController::API keeps it simple.
 
@@ -10,14 +17,7 @@ class Api::KiosksController < ActionController::API
   def heartbeat
     payload = safe_json_payload
 
-    kiosk_id = (payload["kiosk_id"] || request.headers["X-Kiosk-Id"]).to_s.strip
-    return render json: { ok: false, error: "missing kiosk_id" }, status: :bad_request if kiosk_id.blank?
-
-    # Optional: enforce header matches body if both provided
-    header_id = request.headers["X-Kiosk-Id"].to_s.strip
-    if header_id.present? && header_id != kiosk_id
-      return render json: { ok: false, error: "X-Kiosk-Id does not match kiosk_id" }, status: :bad_request
-    end
+    kiosk_id = validated_kiosk_id(payload)
 
     ts = parse_time(payload["ts"]) || Time.zone.now
 
@@ -41,29 +41,32 @@ class Api::KiosksController < ActionController::API
     hb.save!
 
     render json: { ok: true }
-  rescue JSON::ParserError
-    render json: { ok: false, error: "invalid JSON" }, status: :bad_request
+  rescue JSON::ParserError, InvalidPayload => e
+    render json: { ok: false, error: e.message.presence || "invalid JSON" }, status: :bad_request
+  rescue PayloadTooLarge
+    render json: { ok: false, error: "payload too large" }, status: :content_too_large
   end
 
   # POST /api/kiosks/logs
   def logs
     payload = safe_json_payload
 
-    kiosk_id = (payload["kiosk_id"] || request.headers["X-Kiosk-Id"]).to_s.strip
-    return render json: { ok: false, error: "missing kiosk_id" }, status: :bad_request if kiosk_id.blank?
+    kiosk_id = validated_kiosk_id(payload)
 
     inserted = KioskLogIngestor.new(
       payload: payload,
       kiosk_id: kiosk_id,
       request_meta: {
         "remote_ip" => request.remote_ip,
-        "user_agent" => request.user_agent
+        "user_agent" => request.user_agent.to_s.first(1_000)
       }
     ).insert!
 
     render json: { ok: true, inserted: inserted }
-  rescue JSON::ParserError
-    render json: { ok: false, error: "invalid JSON" }, status: :bad_request
+  rescue JSON::ParserError, InvalidPayload => e
+    render json: { ok: false, error: e.message.presence || "invalid JSON" }, status: :bad_request
+  rescue PayloadTooLarge
+    render json: { ok: false, error: "payload too large" }, status: :content_too_large
   end
 
   private
@@ -81,17 +84,39 @@ class Api::KiosksController < ActionController::API
   end
 
   def safe_json_payload
-    # Rails will parse JSON into params when Content-Type is application/json,
-    # but using request.raw_post keeps it explicit and predictable.
-    body = request.raw_post.to_s
+    body = request.body.read(MAX_BODY_BYTES + 1).to_s
+    raise PayloadTooLarge if body.bytesize > MAX_BODY_BYTES
+
     body = "{}" if body.blank?
-    JSON.parse(body)
+    payload = JSON.parse(body)
+    raise InvalidPayload, "JSON payload must be an object" unless payload.is_a?(Hash)
+
+    payload
+  end
+
+  def validated_kiosk_id(payload)
+    body_id = payload["kiosk_id"].to_s.strip
+    header_id = request.headers["X-Kiosk-Id"].to_s.strip
+    kiosk_id = body_id.presence || header_id
+
+    raise InvalidPayload, "missing kiosk_id" if kiosk_id.blank?
+    if body_id.present? && header_id.present? && body_id != header_id
+      raise InvalidPayload, "X-Kiosk-Id does not match kiosk_id"
+    end
+    unless kiosk_id.length <= 253 && Host::NAME_FORMAT.match?(kiosk_id)
+      raise InvalidPayload, "invalid kiosk_id"
+    end
+
+    kiosk_id
   end
 
   def parse_time(val)
     return nil if val.blank?
 
-    Time.zone.parse(val.to_s)
+    parsed = Time.zone.parse(val.to_s)
+    return nil if parsed < MAX_EVENT_AGE.ago || parsed > MAX_CLOCK_SKEW.from_now
+
+    parsed
   rescue ArgumentError, TypeError
     nil
   end
