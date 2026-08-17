@@ -14,11 +14,14 @@ namespace :slides do
       next
     end
 
+    deleted = 0
     expired.find_each do |slide|
       puts "🗑️  Deleting expired Slide ##{slide.id} “#{slide.title}” (expired on #{slide.end_date})"
-      slide.destroy
+      slide.image.purge if slide.image.attached?
+      slide.destroy!
+      deleted += 1
     end
 
-    puts "✅ Deleted #{total} expired slide#{'s' unless total == 1} (expired on or before #{cutoff})."
+    puts "✅ Deleted #{deleted} expired slide#{'s' unless deleted == 1} (expired on or before #{cutoff})."
   end
 end
