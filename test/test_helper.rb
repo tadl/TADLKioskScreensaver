@@ -1,6 +1,7 @@
 ENV["RAILS_ENV"] ||= "test"
 require_relative "../config/environment"
 require "rails/test_help"
+require "rake"
 
 module ActiveSupport
   class TestCase
@@ -25,6 +26,12 @@ module ActiveSupport
 
     def create_slide_with_image!(attributes = {})
       build_slide_with_image(attributes).tap(&:save!)
+    end
+
+    def load_rake_task(task_name, file_name)
+      Rake::Task.define_task(:environment) unless Rake::Task.task_defined?(:environment)
+      Rake.application.rake_require("tasks/#{file_name}", [Rails.root.join("lib").to_s])
+      Rake::Task[task_name].reenable
     end
   end
 end

@@ -1,10 +1,7 @@
 require "test_helper"
-require "rake"
-
 class DeleteExpiredTest < ActiveSupport::TestCase
   setup do
-    Rails.application.load_tasks unless Rake::Task.task_defined?("slides:delete_expired")
-    Rake::Task["slides:delete_expired"].reenable
+    load_rake_task("slides:delete_expired", "delete_expired")
   end
 
   test "deletes expired slides and purges their blobs synchronously" do

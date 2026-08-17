@@ -92,6 +92,9 @@ class ScreensaverControllerTest < ActionDispatch::IntegrationTest
     session = KioskSession.find_by!(kiosk_code: kiosk.slug, host: host, ended_at: nil)
     assert_predicate session.started_at, :present?
 
+    get exit_screensaver_url, params: { kiosk: kiosk.slug, host: host }
+    assert_equal 1, KioskSession.where(kiosk_code: kiosk.slug, host: host, ended_at: nil).count
+
     status = KioskStatus.find_by!(kiosk: kiosk, host: host)
     assert_equal "opac", status.state
   end

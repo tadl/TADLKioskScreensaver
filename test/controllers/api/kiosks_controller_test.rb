@@ -21,6 +21,15 @@ class Api::KiosksControllerTest < ActionDispatch::IntegrationTest
     assert_equal "JSON payload must be an object", response.parsed_body["error"]
   end
 
+  test "rejects requests without the shared key" do
+    post api_kiosks_heartbeat_url,
+      params: { kiosk_id: "nucpac01" }.to_json,
+      headers: @headers.except("X-Kiosk-Key")
+
+    assert_response :unauthorized
+    assert_not KioskHeartbeat.exists?(kiosk_id: "nucpac01")
+  end
+
   test "requires matching valid kiosk identifiers" do
     post api_kiosks_logs_url,
       params: { kiosk_id: "nucpac01", events: [] }.to_json,
