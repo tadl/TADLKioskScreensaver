@@ -1,23 +1,8 @@
 {
   "name": "TADLKioskScreensaver",
   "version": "1.0.0",
-  "packageManager": "yarn@1.22.22",
+  "private": true,
   "engines": {
     "node": "24.x"
-  },
-  "main": "index.js",
-  "repository": "git@github.com:tadl/TADLKioskScreensaver.git",
-  "author": "William Rockwood <wrockwood@tadl.org>",
-  "license": "MIT",
-  "scripts": {
-    "build:css": "sass --quiet-deps ./app/assets/stylesheets/application.sass.scss:./app/assets/builds/application.css ./app/assets/stylesheets/rails_admin.scss:./app/assets/builds/rails_admin.css --no-source-map --load-path=node_modules"
-  },
-  "resolutions": {
-    "@hotwired/turbo": "8.0.23",
-    "immutable": "5.1.8"
-  },
-  "dependencies": {
-    "rails_admin": "3.3.0",
-    "sass": "^1.102.0"
   }
 }

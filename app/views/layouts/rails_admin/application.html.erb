@@ -4,7 +4,10 @@
     <%= render "layouts/rails_admin/head" %>
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
-	    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	    <script
+        src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"
+        integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ"
+        crossorigin="anonymous"></script>
 	    <%= javascript_include_tag "rails_admin_kiosks", defer: true, data: { turbo_track: "reload" } %>
 
     <!-- Font Awesome via CSS only (no JS, so RailsAdmin widgets keep working) -->
@@ -15,15 +18,6 @@
     >
   </head>
   <body class="rails_admin" data-turbo="false">
-    <script>
-      // Ensure any forms RailsAdmin renders are NOT submitted by Turbo
-      document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('form').forEach(function(f) {
-          f.setAttribute('data-turbo', 'false');
-        });
-      });
-    </script>
-
     <div data-i18n-options="<%= I18n.t("admin.js").to_json %>" id="admin-js"></div>
     <div class="badge bg-warning" id="loading" style="display:none; position:fixed; right:20px; bottom:20px; z-index:100000">
       <%= t('admin.loading') %>

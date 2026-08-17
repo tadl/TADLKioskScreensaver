@@ -68,14 +68,11 @@ end
 gem "tailwindcss-rails"
 gem "sassc-rails"
 gem "rails_admin", "~> 3.3"
-gem "cssbundling-rails"
 gem "mini_magick"
 gem "omniauth"
 gem "omniauth-google-oauth2"
 gem 'omniauth-rails_csrf_protection'
 gem "cancancan"
-
-gem 'bootstrap', '~> 5.3'
 
 gem "fastimage"
 

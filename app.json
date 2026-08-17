@@ -39,9 +39,5 @@
       "command": "bundle exec rake kiosk_logs:purge_old",
       "schedule": "20 2 * * *"
     }
-  ],
-  "buildpacks": [
-    { "url": "heroku/nodejs" },
-    { "url": "heroku/ruby" }
   ]
 }
