@@ -107,8 +107,8 @@ module DemoData
         end_date: end_date,
         fallback: attrs[:fallback] || false
       )
-      slide.save!
       attach_demo_image(slide, attrs, index)
+      slide.save!
     end
   end
 

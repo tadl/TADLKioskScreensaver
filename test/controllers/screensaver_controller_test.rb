@@ -80,24 +80,4 @@ class ScreensaverControllerTest < ActionDispatch::IntegrationTest
     assert_equal "opac", status.state
   end
 
-  private
-
-  def create_slide_with_image!(title:, display_seconds:, start_date:, end_date:, fallback: false)
-    slide = Slide.create!(
-      title: title,
-      display_seconds: display_seconds,
-      start_date: start_date,
-      end_date: end_date,
-      fallback: fallback
-    )
-    blob = ActiveStorage::Blob.create_and_upload!(
-      io: StringIO.new("fake image bytes"),
-      filename: "#{title.parameterize}.jpg",
-      content_type: "image/jpeg",
-      metadata: { width: 1920, height: 1080 },
-      identify: false
-    )
-    slide.image.attach(blob)
-    slide
-  end
 end

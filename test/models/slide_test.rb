@@ -2,10 +2,17 @@ require "test_helper"
 
 class SlideTest < ActiveSupport::TestCase
   test "applies default display time and start date" do
-    slide = Slide.create!(title: "New Slide")
+    slide = create_slide_with_image!(title: "New Slide")
 
     assert_equal 10, slide.display_seconds
     assert_equal Date.current, slide.start_date
+  end
+
+  test "requires an image" do
+    slide = Slide.new(title: "Missing Image")
+
+    assert_not slide.valid?
+    assert_includes slide.errors[:image], "must be attached"
   end
 
   test "requires end date to be on or after start date" do

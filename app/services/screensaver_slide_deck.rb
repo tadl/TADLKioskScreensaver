@@ -8,9 +8,9 @@ class ScreensaverSlideDeck
   end
 
   def slides
-    selected = @kiosk.slides.active_on(@date)
+    selected = @kiosk.slides.with_image.active_on(@date)
     selected = selected.order(Arel.sql("RANDOM()")) if @random
-    selected.any? ? selected : Slide.fallbacks
+    selected.any? ? selected : Slide.fallbacks.with_image
   end
 
   def payload(base_url)

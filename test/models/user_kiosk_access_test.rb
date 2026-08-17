@@ -55,11 +55,11 @@ class UserKioskAccessTest < ActiveSupport::TestCase
 
     Current.user = @user
 
-    new_slide = Slide.create!(title: "Restricted Assignment")
+    new_slide = create_slide_with_image!(title: "Restricted Assignment")
     new_slide.kiosk_ids = [@catalog_kiosk.id]
     assert_empty new_slide.kiosk_ids
 
-    existing_slide = Slide.create!(title: "Mixed Assignment")
+    existing_slide = create_slide_with_image!(title: "Mixed Assignment")
     existing_slide.kiosks = [@signage_kiosk, @catalog_kiosk]
     existing_slide.kiosk_ids = [@signage_kiosk.id]
 
@@ -72,7 +72,7 @@ class UserKioskAccessTest < ActiveSupport::TestCase
     staff = Permission.find_or_create_by!(name: "staff")
     user_permission = @user.user_permissions.find_by!(permission: staff)
     user_permission.kiosks << @signage_kiosk
-    slide = Slide.create!(title: "Signage Slide")
+    slide = create_slide_with_image!(title: "Signage Slide")
     slide.kiosks << @signage_kiosk
 
     ability = Ability.new(@user)
@@ -84,11 +84,11 @@ class UserKioskAccessTest < ActiveSupport::TestCase
   test "slide managers cannot edit slides shared with inaccessible kiosks" do
     user_permission = UserPermission.create!(user: @user, permission: @permission)
     user_permission.kiosks << @signage_kiosk
-    local_slide = Slide.create!(title: "Local Slide")
+    local_slide = create_slide_with_image!(title: "Local Slide")
     local_slide.kiosks << @signage_kiosk
-    shared_slide = Slide.create!(title: "Shared Slide")
+    shared_slide = create_slide_with_image!(title: "Shared Slide")
     shared_slide.kiosks = [@signage_kiosk, @catalog_kiosk]
-    fallback = Slide.create!(title: "Global Fallback", fallback: true)
+    fallback = create_slide_with_image!(title: "Global Fallback", fallback: true)
 
     ability = Ability.new(@user)
 
