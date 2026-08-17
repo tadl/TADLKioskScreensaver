@@ -3,6 +3,8 @@ class User < ApplicationRecord
   # ——————————————————————————————————————————
   # find-or-create by omniauth, but only authorized google domain accounts
   def self.from_omniauth(auth)
+    return nil unless auth&.info
+
     email = auth.info.email.to_s.downcase
     return nil unless email.end_with?("@#{GOOGLE_DOMAIN}")
 

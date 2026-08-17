@@ -4,6 +4,8 @@ class SessionsController < ApplicationController
 
   def create
     auth = request.env['omniauth.auth']
+    return authentication_failed if auth.blank?
+
     user = User.from_omniauth(auth)
     if user
       session[:user_id] = user.id
@@ -16,13 +18,18 @@ class SessionsController < ApplicationController
   end
 
   def failure
-    # OAuth failure (e.g. wrong domain)
-    reset_session
-    redirect_to sign_in_path, alert: 'Authentication failed, please try again.'
+    authentication_failed
   end
 
   def destroy
     reset_session
     redirect_to root_path
+  end
+
+  private
+
+  def authentication_failed
+    reset_session
+    redirect_to login_path, alert: 'Authentication failed, please try again.'
   end
 end

@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   get    '/login',  to: 'sessions#new',     as: :login
   delete '/logout', to: 'sessions#destroy', as: :logout
   get '/auth/:provider/callback', to: 'sessions#create'
+  match '/auth/failure', to: 'sessions#failure', via: [:get, :post]
 
   namespace :admin do
     get "kiosk_hosts/:host(.:format)",
