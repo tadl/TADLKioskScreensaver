@@ -16,4 +16,12 @@ class KioskSession < ApplicationRecord
     return nil unless ended_at && started_at
     ended_at - started_at
   end
+
+  def duration_within(range_start, range_end, now: Time.current)
+    effective_start = [started_at, range_start].max
+    effective_end = [ended_at || now, range_end, now].min
+    return 0 if effective_end <= effective_start
+
+    effective_end - effective_start
+  end
 end

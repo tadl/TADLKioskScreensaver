@@ -99,26 +99,47 @@ module ApplicationHelper
     fallback
   end
 
+  def kiosk_usage_date_range(start_value, end_value, fallback, max_days: 366)
+    start_date = safe_date_param(start_value, fallback.begin)
+    end_date = safe_date_param(end_value, fallback.end)
+    return fallback if start_date > end_date
+    return fallback if (end_date - start_date).to_i >= max_days
+
+    start_date..end_date
+  rescue Date::Error, RangeError
+    fallback
+  end
+
   def kiosk_usage_chart_payload(sessions, start_date, end_date)
     sessions = Array(sessions)
+    range_start = start_date.beginning_of_day
+    range_end = [end_date.end_of_day, Time.current].min
+    session_starts = sessions.filter_map do |session|
+      next if session.started_at > range_end
+      next if session.ended_at && session.ended_at < range_start
+
+      [session.started_at, range_start].max
+    end
 
     if start_date == end_date
       hours = (0..23).to_a
       {
         labels: hours.map { |hour| "#{hour}:00" },
-        data: hours.map { |hour| sessions.count { |session| session.started_at.hour == hour && session.started_at.to_date == start_date } }
+        data: hours.map { |hour| session_starts.count { |started_at| started_at.hour == hour && started_at.to_date == start_date } }
       }
     else
       days = (start_date..end_date).to_a
       {
         labels: days.map { |day| day.strftime("%b %-d") },
-        data: days.map { |day| sessions.count { |session| session.started_at.to_date == day } }
+        data: days.map { |day| session_starts.count { |started_at| started_at.to_date == day } }
       }
     end
   end
 
   def kiosk_usage_host_stats(host_sessions, start_date, end_date, group_obj = nil)
-    durations = host_sessions.map(&:session_duration).compact
+    range_start = start_date.beginning_of_day
+    range_end = [end_date.end_of_day, Time.current].min
+    durations = host_sessions.map { |session| session.duration_within(range_start, range_end) }.select(&:positive?)
     total_min = durations.any? ? (durations.sum / 60.0) : 0
 
     group_obj ||= host_sessions.first&.kiosk&.kiosk_group

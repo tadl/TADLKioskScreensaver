@@ -10,29 +10,29 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
+ActiveRecord::Schema[8.1].define(version: 2025062600000001) do
   # These are extensions that must be enabled in order to support this database
-  enable_extension "plpgsql"
+  enable_extension "pg_catalog.plpgsql"
 
   create_table "active_storage_attachments", force: :cascade do |t|
-    t.string "name", null: false
-    t.string "record_type", null: false
-    t.bigint "record_id", null: false
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "record_id", null: false
+    t.string "record_type", null: false
     t.index ["blob_id"], name: "index_active_storage_attachments_on_blob_id"
     t.index ["record_type", "record_id", "name", "blob_id"], name: "index_active_storage_attachments_uniqueness", unique: true
   end
 
   create_table "active_storage_blobs", force: :cascade do |t|
-    t.string "key", null: false
-    t.string "filename", null: false
-    t.string "content_type"
-    t.text "metadata"
-    t.string "service_name", null: false
     t.bigint "byte_size", null: false
     t.string "checksum"
+    t.string "content_type"
     t.datetime "created_at", null: false
+    t.string "filename", null: false
+    t.string "key", null: false
+    t.text "metadata"
+    t.string "service_name", null: false
     t.index ["key"], name: "index_active_storage_blobs_on_key", unique: true
   end
 
@@ -43,142 +43,145 @@ ActiveRecord::Schema[7.1].define(version: 2025062600000001) do
   end
 
   create_table "hosts", force: :cascade do |t|
-    t.string "name", null: false
-    t.string "location"
-    t.text "notes"
     t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
+    t.string "location"
+    t.string "name", null: false
+    t.text "notes"
     t.datetime "updated_at", null: false
     t.index ["name"], name: "index_hosts_on_name", unique: true
   end
 
   create_table "kiosk_groups", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "location_shortname"
     t.string "name", null: false
     t.string "slug", null: false
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.string "location_shortname"
     t.index ["location_shortname"], name: "index_kiosk_groups_on_location_shortname"
     t.index ["slug"], name: "index_kiosk_groups_on_slug", unique: true
   end
 
   create_table "kiosk_groups_user_permissions", id: false, force: :cascade do |t|
-    t.bigint "user_permission_id", null: false
     t.bigint "kiosk_group_id", null: false
+    t.bigint "user_permission_id", null: false
   end
 
   create_table "kiosk_heartbeats", force: :cascade do |t|
-    t.string "kiosk_id", null: false
-    t.datetime "last_seen_at", null: false
-    t.bigint "uptime_seconds"
-    t.string "kiosk_service"
-    t.integer "chromium_pids"
-    t.jsonb "raw_payload", default: {}, null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.boolean "chromium_devtools_ok"
     t.string "chromium_devtools_http"
     t.integer "chromium_devtools_ms"
+    t.boolean "chromium_devtools_ok"
+    t.integer "chromium_pids"
+    t.datetime "created_at", null: false
+    t.string "kiosk_id", null: false
+    t.string "kiosk_service"
+    t.datetime "last_seen_at", null: false
+    t.jsonb "raw_payload", default: {}, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "uptime_seconds"
     t.index ["kiosk_id"], name: "index_kiosk_heartbeats_on_kiosk_id", unique: true
     t.index ["last_seen_at"], name: "index_kiosk_heartbeats_on_last_seen_at"
   end
 
   create_table "kiosk_logs", force: :cascade do |t|
+    t.datetime "created_at", null: false
     t.string "kiosk_id", null: false
-    t.datetime "occurred_at", null: false
     t.string "level"
     t.text "message"
+    t.datetime "occurred_at", null: false
     t.jsonb "raw_payload", default: {}, null: false
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["kiosk_id", "occurred_at"], name: "index_kiosk_logs_on_kiosk_id_and_occurred_at", order: { occurred_at: :desc }
     t.index ["kiosk_id"], name: "index_kiosk_logs_on_kiosk_id"
     t.index ["occurred_at"], name: "index_kiosk_logs_on_occurred_at"
   end
 
   create_table "kiosk_sessions", force: :cascade do |t|
-    t.string "kiosk_code", null: false
-    t.string "host"
-    t.datetime "started_at", null: false
-    t.datetime "ended_at"
-    t.integer "slide_fetch_count", default: 0
     t.datetime "created_at", null: false
+    t.datetime "ended_at"
+    t.string "host"
+    t.string "kiosk_code", null: false
+    t.integer "slide_fetch_count", default: 0
+    t.datetime "started_at", null: false
     t.datetime "updated_at", null: false
     t.index ["kiosk_code", "host", "started_at"], name: "index_kiosk_sessions_on_kiosk_code_and_host_and_started_at"
+    t.index ["kiosk_code", "started_at"], name: "index_kiosk_sessions_on_kiosk_code_and_started_at"
+    t.index ["started_at"], name: "index_kiosk_sessions_on_started_at"
   end
 
   create_table "kiosk_statuses", force: :cascade do |t|
-    t.bigint "kiosk_id", null: false
+    t.datetime "created_at", null: false
     t.string "host", null: false
+    t.bigint "kiosk_id", null: false
     t.integer "state", default: 0, null: false
     t.datetime "state_changed_at", null: false
-    t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["kiosk_id", "host"], name: "index_kiosk_statuses_on_kiosk_id_and_host", unique: true
     t.index ["kiosk_id"], name: "index_kiosk_statuses_on_kiosk_id"
   end
 
   create_table "kiosks", force: :cascade do |t|
-    t.string "name"
-    t.string "slug"
     t.string "catalog_url"
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
     t.bigint "kiosk_group_id"
     t.string "location"
+    t.string "name"
+    t.string "slug"
+    t.datetime "updated_at", null: false
     t.index ["kiosk_group_id"], name: "index_kiosks_on_kiosk_group_id"
     t.index ["slug"], name: "index_kiosks_on_slug", unique: true
   end
 
   create_table "kiosks_slides", id: false, force: :cascade do |t|
-    t.bigint "slide_id", null: false
     t.bigint "kiosk_id", null: false
+    t.bigint "slide_id", null: false
   end
 
   create_table "kiosks_user_permissions", id: false, force: :cascade do |t|
-    t.bigint "user_permission_id", null: false
     t.bigint "kiosk_id", null: false
+    t.bigint "user_permission_id", null: false
     t.index ["kiosk_id", "user_permission_id"], name: "idx_on_kiosk_id_user_permission_id_c87732717d"
     t.index ["user_permission_id", "kiosk_id"], name: "idx_on_user_permission_id_kiosk_id_e645a869c2", unique: true
   end
 
   create_table "permissions", force: :cascade do |t|
-    t.string "name"
-    t.text "description"
     t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name"
     t.datetime "updated_at", null: false
   end
 
   create_table "slides", force: :cascade do |t|
-    t.string "title"
-    t.string "link"
-    t.integer "display_seconds"
-    t.date "start_date"
-    t.date "end_date"
     t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
+    t.integer "display_seconds"
+    t.date "end_date"
     t.boolean "fallback", default: false, null: false
+    t.string "link"
+    t.date "start_date"
+    t.string "title"
+    t.datetime "updated_at", null: false
   end
 
   create_table "user_permissions", force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.bigint "permission_id", null: false
     t.datetime "created_at", null: false
+    t.bigint "permission_id", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
     t.index ["permission_id"], name: "index_user_permissions_on_permission_id"
     t.index ["user_id"], name: "index_user_permissions_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
+    t.boolean "admin", default: false, null: false
+    t.datetime "created_at", null: false
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
-    t.string "reset_password_token"
-    t.datetime "reset_password_sent_at"
-    t.datetime "remember_created_at"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "name"
-    t.boolean "admin", default: false, null: false
     t.string "image_url"
+    t.string "name"
+    t.datetime "remember_created_at"
+    t.datetime "reset_password_sent_at"
+    t.string "reset_password_token"
+    t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end

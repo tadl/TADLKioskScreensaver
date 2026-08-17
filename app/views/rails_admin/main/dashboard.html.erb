@@ -22,18 +22,19 @@
   presets = kiosk_usage_presets
   last_30_days = presets["last_30_days"]
 
-  # Current range (fallback to last 30)
-  start_date   = safe_date_param(params[:start], last_30_days.begin)
-  end_date     = safe_date_param(params[:end], last_30_days.end)
+  selected_range = kiosk_usage_date_range(params[:start], params[:end], last_30_days)
+  start_date = selected_range.begin
+  end_date = selected_range.end
 
   # Detect current preset (or custom)
-  param_preset     = params[:preset_range].presence
   detected_preset  = presets.find { |_k, r| r.begin == start_date && r.end == end_date }&.first
-  selected_preset  = param_preset || detected_preset || "custom"
+  selected_preset  = detected_preset || "custom"
 
+  range_start = start_date.beginning_of_day
+  range_end = [end_date.end_of_day, Time.current].min
   sessions = KioskSession
     .includes(kiosk: :kiosk_group)
-    .where(started_at: start_date.beginning_of_day..end_date.end_of_day)
+    .where("started_at <= ? AND (ended_at IS NULL OR ended_at >= ?)", range_end, range_start)
   accessible_kiosks = current_user.admin? ? Kiosk.all : current_user.accessible_kiosks
   sessions = sessions.where(kiosk_code: accessible_kiosks.select(:slug)) unless current_user.admin?
 
