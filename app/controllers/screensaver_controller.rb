@@ -9,24 +9,20 @@ class ScreensaverController < ApplicationController
     # If no kiosk param, render the generic landing page
     return render(:landing) if params[:kiosk].blank?
 
-    kiosk_code = params[:kiosk].to_s
-    host       = params[:host].to_s.presence
+    @kiosk = Kiosk.find_by!(slug: params[:kiosk].to_s)
+    host = validated_host
 
-    # Ensure we have a Host record for this hostname
     Host.find_or_create_by!(name: host) if host.present?
 
-    # End session for this kiosk/host if both present
     if host.present?
-      session = KioskSession.where(
-        kiosk_code: kiosk_code,
+      now = Time.zone.now
+      KioskSession.where(
+        kiosk_code: @kiosk.slug,
         host:       host,
         ended_at:   nil
-      ).order(started_at: :desc).first
-      session&.update!(ended_at: Time.zone.now)
+      ).update_all(ended_at: now, updated_at: now)
     end
 
-    # Look up the kiosk or 400
-    @kiosk = Kiosk.find_by!(slug: kiosk_code)
     today  = Date.current
 
     # Record state: entering screensaver
@@ -35,13 +31,8 @@ class ScreensaverController < ApplicationController
     @slides = ScreensaverSlideDeck.new(kiosk: @kiosk, date: today, random: true).slides
     return render(:empty) if @slides.empty?
 
-    base        = request.base_url
-    params_hash = { kiosk: @kiosk.slug, host: host } # host here is the query param
-    @exit_url   = Rails.application.routes.url_helpers
-                   .exit_screensaver_url(params_hash, host: request.base_url)
-
-    @slide_data = Slide.screensaver_payload(@slides, base)
-  rescue ActiveRecord::RecordNotFound
+    @slide_data = Slide.screensaver_payload(@slides, request.base_url)
+  rescue ActiveRecord::RecordNotFound, ActionController::BadRequest
     render :empty, status: :bad_request, layout: false
   end
 
@@ -58,35 +49,27 @@ class ScreensaverController < ApplicationController
 
   # GET /exit?kiosk=<slug>&host=<hostname>
   def exit
-    kiosk_code = params[:kiosk].to_s
-    host       = params[:host].to_s.presence
+    kiosk = Kiosk.find_by(slug: params[:kiosk].to_s)
+    return redirect_to(root_path) unless kiosk
+
+    host = validated_host
 
     Host.find_or_create_by!(name: host) if host.present?
 
-    # Start a new session if both kiosk and host present and no open session
-    if kiosk_code.present? && host.present?
-      open_session = KioskSession.where(
-        kiosk_code: kiosk_code,
-        host:       host,
-        ended_at:   nil
-      ).order(started_at: :desc).first
-
-      unless open_session
-        KioskSession.create!(
-          kiosk_code: kiosk_code,
-          host:       host,
-          started_at: Time.zone.now
-        )
+    if host.present?
+      KioskSession.find_or_create_by!(
+        kiosk_code: kiosk.slug,
+        host: host,
+        ended_at: nil
+      ) do |kiosk_session|
+        kiosk_session.started_at = Time.zone.now
       end
     end
 
-    kiosk = Kiosk.find_by(slug: kiosk_code)
-    if kiosk
-      KioskStatus.mark!(kiosk: kiosk, host: host, state: :opac) if host.present?
-      redirect_to_catalog(kiosk)
-    else
-      redirect_to root_path
-    end
+    KioskStatus.mark!(kiosk: kiosk, host: host, state: :opac) if host.present?
+    redirect_to_catalog(kiosk)
+  rescue ActionController::BadRequest
+    head :bad_request
   end
 
   # GET /home?kiosk=<slug>&host=<hostname>
@@ -95,21 +78,26 @@ class ScreensaverController < ApplicationController
   # - Redirects to the kiosk’s catalog_url
   # - DOES NOT touch KioskSession or KioskStatus (no timer resets)
   def home
-    kiosk_code = params[:kiosk].to_s
-    host       = params[:host].to_s.presence
+    kiosk = Kiosk.find_by(slug: params[:kiosk].to_s)
+    return redirect_to(root_path) unless kiosk
+
+    host = validated_host
 
     Host.find_or_create_by!(name: host) if host.present?
-
-    kiosk = Kiosk.find_by(slug: kiosk_code)
-
-    if kiosk
-      redirect_to_catalog(kiosk)
-    else
-      redirect_to root_path
-    end
+    redirect_to_catalog(kiosk)
+  rescue ActionController::BadRequest
+    head :bad_request
   end
 
   private
+
+  def validated_host
+    host = params[:host].to_s.strip.presence
+    return if host.nil?
+    return host if host.length <= 253 && Host::NAME_FORMAT.match?(host)
+
+    raise ActionController::BadRequest, "invalid host"
+  end
 
   def redirect_to_catalog(kiosk)
     redirect_to catalog_redirect_url(kiosk), allow_other_host: true

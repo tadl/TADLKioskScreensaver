@@ -9,10 +9,26 @@ class ScreensaverControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "unknown kiosk renders empty state with bad request" do
-    get root_url, params: { kiosk: "missing-kiosk" }
+    get root_url, params: { kiosk: "missing-kiosk", host: "untrusted-host" }
 
     assert_response :bad_request
     assert_includes response.body, "Unknown kiosk code"
+    assert_not Host.exists?(name: "untrusted-host")
+  end
+
+  test "exit does not record sessions for unknown kiosks" do
+    get exit_screensaver_url, params: { kiosk: "missing-kiosk", host: "untrusted-host" }
+
+    assert_redirected_to root_path
+    assert_not Host.exists?(name: "untrusted-host")
+    assert_not KioskSession.exists?(host: "untrusted-host")
+  end
+
+  test "rejects invalid host identifiers" do
+    get root_url, params: { kiosk: kiosks(:one).slug, host: "bad host<script>" }
+
+    assert_response :bad_request
+    assert_not Host.exists?(name: "bad host<script>")
   end
 
   test "index with kiosk and host closes an open session and marks screensaver state" do
