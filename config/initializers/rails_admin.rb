@@ -117,14 +117,24 @@ RailsAdmin.config do |config|
 
     create do
       field(:user)          { help 'Pick the Google-OAuth user to grant a role to.' }
-      field :permission
+      field :permission do
+        associated_collection_scope do
+          user = bindings[:controller].current_user
+          Proc.new { |scope| user.admin? ? scope : scope.where.not(name: 'admin') }
+        end
+      end
       field(:kiosk_groups)  { help 'Select kiosk groups this user may manage. This grants access to every kiosk in each selected group.' }
       field(:kiosks)        { help 'Optionally select individual kiosks for narrower access without granting the whole group.' }
     end
 
     edit do
       field(:user)          { read_only true; help 'Users are managed via Google OAuth; you cannot change this here.' }
-      field :permission
+      field :permission do
+        associated_collection_scope do
+          user = bindings[:controller].current_user
+          Proc.new { |scope| user.admin? ? scope : scope.where.not(name: 'admin') }
+        end
+      end
       field(:kiosk_groups)  { help 'Select kiosk groups this user may manage. This grants access to every kiosk in each selected group.' }
       field(:kiosks)        { help 'Optionally select individual kiosks for narrower access without granting the whole group.' }
     end

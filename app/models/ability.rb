@@ -19,7 +19,13 @@ class Ability
 
     # 3) UserPermissions & Permissions
     if user.can?('manage_users')
-      can :manage, UserPermission
+      manageable_user_ids = User.where(admin: false).where.not(id: user.id).ids
+      manageable_permission_ids = Permission.where.not(name: 'admin').ids
+
+      can :read, UserPermission
+      can [:update, :destroy], UserPermission,
+        user_id: manageable_user_ids,
+        permission_id: manageable_permission_ids
       can :read,   Permission
     end
 
