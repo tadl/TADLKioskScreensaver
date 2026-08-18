@@ -57,6 +57,21 @@ class ScreensaverControllerTest < ActionDispatch::IntegrationTest
     assert_includes response.body, "Open Hours"
   end
 
+  test "index caps an abandoned session before closing current sessions" do
+    kiosk = kiosks(:one)
+    host = "stale-screensaver-host"
+    stale = KioskSession.create!(
+      kiosk_code: kiosk.slug,
+      host: host,
+      started_at: 2.days.ago
+    )
+
+    get root_url, params: { kiosk: kiosk.slug, host: host }
+
+    assert_response :success
+    assert_equal stale.started_at + 12.hours, stale.reload.ended_at
+  end
+
   test "slides json falls back when kiosk has no active slides" do
     kiosk = kiosks(:two)
     fallback = create_slide_with_image!(
@@ -97,6 +112,23 @@ class ScreensaverControllerTest < ActionDispatch::IntegrationTest
 
     status = KioskStatus.find_by!(kiosk: kiosk, host: host)
     assert_equal "opac", status.state
+  end
+
+  test "exit replaces an abandoned open session" do
+    kiosk = kiosks(:one)
+    host = "stale-catalog-host"
+    stale = KioskSession.create!(
+      kiosk_code: kiosk.slug,
+      host: host,
+      started_at: 2.days.ago
+    )
+
+    get exit_screensaver_url, params: { kiosk: kiosk.slug, host: host }
+
+    assert_redirected_to kiosk.catalog_url
+    assert_equal stale.started_at + 12.hours, stale.reload.ended_at
+    current = KioskSession.find_by!(kiosk_code: kiosk.slug, host: host, ended_at: nil)
+    assert_operator current.started_at, :>, 1.minute.ago
   end
 
 end

@@ -114,7 +114,7 @@ module ApplicationHelper
     range_end = [end_date.end_of_day, Time.current].min
     session_starts = sessions.filter_map do |session|
       next if session.started_at > range_end
-      next if session.ended_at && session.ended_at < range_start
+      next unless session.duration_within(range_start, range_end).positive?
 
       [session.started_at, range_start].max
     end

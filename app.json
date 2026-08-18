@@ -28,6 +28,10 @@
   },
   "cron": [
     {
+      "command": "bundle exec rake kiosk_sessions:close_stale",
+      "schedule": "15 * * * *"
+    },
+    {
       "command": "bundle exec rake slides:expire",
       "schedule": "0 2 * * *"
     },

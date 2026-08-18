@@ -35,4 +35,17 @@ class MaintenanceTasksTest < ActiveSupport::TestCase
     assert_not KioskLog.exists?(old_log.id)
     assert KioskLog.exists?(recent_log.id)
   end
+
+  test "session cleanup closes abandoned open sessions" do
+    load_rake_task("kiosk_sessions:close_stale", "kiosk_sessions")
+    session = KioskSession.create!(
+      kiosk_code: kiosks(:one).slug,
+      host: "task-stale-host",
+      started_at: 2.days.ago
+    )
+
+    capture_io { Rake::Task["kiosk_sessions:close_stale"].invoke }
+
+    assert_equal session.started_at + 12.hours, session.reload.ended_at
+  end
 end

@@ -16,6 +16,7 @@ class ScreensaverController < ApplicationController
 
     if host.present?
       now = Time.zone.now
+      KioskSession.close_stale!(now: now, kiosk_code: @kiosk.slug, host: host)
       KioskSession.where(
         kiosk_code: @kiosk.slug,
         host:       host,
@@ -57,12 +58,14 @@ class ScreensaverController < ApplicationController
     Host.find_or_create_by!(name: host) if host.present?
 
     if host.present?
+      now = Time.zone.now
+      KioskSession.close_stale!(now: now, kiosk_code: kiosk.slug, host: host)
       KioskSession.find_or_create_by!(
         kiosk_code: kiosk.slug,
         host: host,
         ended_at: nil
       ) do |kiosk_session|
-        kiosk_session.started_at = Time.zone.now
+        kiosk_session.started_at = now
       end
     end
 
