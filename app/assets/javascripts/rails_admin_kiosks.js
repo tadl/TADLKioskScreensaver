@@ -58,6 +58,9 @@
 
     var lines = [];
     lines.push('<div><strong>Last seen:</strong> ' + esc(fmtTime(hb.last_seen_at)) + '</div>');
+    if (hb.private_ip_address) {
+      lines.push('<div><strong>Private IP:</strong> ' + esc(hb.private_ip_address) + '</div>');
+    }
     lines.push('<div><strong>Uptime:</strong> ' + esc(humanDuration(hb.uptime_seconds)) + '</div>');
     lines.push('<div><strong>Kiosk service:</strong> ' + esc(hb.kiosk_service ?? "") + '</div>');
     lines.push('<div><strong>Chromium pids:</strong> ' + esc(hb.chromium_pids ?? "") + '</div>');

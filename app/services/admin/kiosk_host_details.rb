@@ -43,6 +43,7 @@ module Admin
         last_seen_at: heartbeat.last_seen_at,
         uptime_seconds: heartbeat.uptime_seconds,
         kiosk_service: heartbeat.kiosk_service,
+        private_ip_address: raw_payload["private_ip_address"],
         chromium_pids: heartbeat.chromium_pids,
         chromium_devtools_ok: raw_payload["chromium_devtools_ok"],
         chromium_devtools_http: raw_payload["chromium_devtools_http"],

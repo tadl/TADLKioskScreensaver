@@ -10,6 +10,7 @@ class Admin::KioskHostDetailsTest < ActiveSupport::TestCase
       kiosk_service: "running",
       chromium_pids: 3,
       raw_payload: {
+        "private_ip_address" => "192.0.2.15",
         "chromium_devtools_ok" => true,
         "chromium_devtools_http" => 200,
         "chromium_devtools_ms" => 12
@@ -32,6 +33,7 @@ class Admin::KioskHostDetailsTest < ActiveSupport::TestCase
     assert_equal true, details[:ok]
     assert_equal host, details[:host]
     assert_equal "running", details[:heartbeat][:kiosk_service]
+    assert_equal "192.0.2.15", details[:heartbeat][:private_ip_address]
     assert_equal "browser", details[:logs].first[:kind]
     assert_equal "https://example.com", details[:logs].first[:tab_url]
   end
