@@ -10,6 +10,12 @@
     try { return new Date(t).toLocaleString(); } catch (e) { return String(t); }
   }
 
+  function fmtEpochSeconds(t) {
+    var seconds = Number(t);
+    if (!Number.isFinite(seconds) || seconds <= 0) return "";
+    return fmtTime(seconds * 1000);
+  }
+
   function isUrl(s) {
     return typeof s === "string" && /^https?:\/\//i.test(s);
   }
@@ -60,6 +66,18 @@
     lines.push('<div><strong>Last seen:</strong> ' + esc(fmtTime(hb.last_seen_at)) + '</div>');
     if (hb.private_ip_address) {
       lines.push('<div><strong>Private IP:</strong> ' + esc(hb.private_ip_address) + '</div>');
+    }
+    if (hb.wireguard_ip_address) {
+      lines.push('<div><strong>WireGuard IP:</strong> ' + esc(hb.wireguard_ip_address) + '</div>');
+    }
+    if (hb.wireguard_status) {
+      lines.push('<div><strong>WireGuard status:</strong> ' + esc(hb.wireguard_status) + '</div>');
+    }
+    if (hb.wireguard_latest_handshake_at) {
+      lines.push('<div><strong>WireGuard last handshake:</strong> ' + esc(fmtEpochSeconds(hb.wireguard_latest_handshake_at)) + '</div>');
+    }
+    if (hb.wireguard_handshake_age_seconds !== undefined && hb.wireguard_handshake_age_seconds !== null) {
+      lines.push('<div><strong>WireGuard handshake age:</strong> ' + esc(humanDuration(hb.wireguard_handshake_age_seconds)) + '</div>');
     }
     lines.push('<div><strong>Uptime:</strong> ' + esc(humanDuration(hb.uptime_seconds)) + '</div>');
     lines.push('<div><strong>Kiosk service:</strong> ' + esc(hb.kiosk_service ?? "") + '</div>');

@@ -13,6 +13,7 @@
 * **Kiosk Assignment**: Assign slides to one or more kiosks.
 * **User Permissions**: Granular access control with CanCanCan and user/group permissions.
 * **Admin UI**: Full CRUD admin interface powered by RailsAdmin.
+* **Kiosk Health**: Authenticated heartbeat reporting for browser and WireGuard management status.
 * **Image Storage**: ActiveStorage for uploads; local disk in development, mounted storage in production.
 
 ## Technology Stack

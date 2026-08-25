@@ -57,11 +57,23 @@ class Api::KiosksControllerTest < ActionDispatch::IntegrationTest
 
   test "accepts authenticated heartbeat payloads" do
     post api_kiosks_heartbeat_url,
-      params: { kiosk_id: "nucpac01", ts: Time.current.iso8601, kiosk_service: "running" }.to_json,
+      params: {
+        kiosk_id: "nucpac01",
+        ts: Time.current.iso8601,
+        kiosk_service: "running",
+        wireguard_enabled: true,
+        wireguard_ip_address: "10.73.73.24",
+        wireguard_status: "healthy",
+        wireguard_latest_handshake_at: 1_777_891_200,
+        wireguard_handshake_age_seconds: 20
+      }.to_json,
       headers: @headers
 
     assert_response :success
-    assert_equal "running", KioskHeartbeat.find_by!(kiosk_id: "nucpac01").kiosk_service
+    heartbeat = KioskHeartbeat.find_by!(kiosk_id: "nucpac01")
+    assert_equal "running", heartbeat.kiosk_service
+    assert_equal "10.73.73.24", heartbeat.raw_payload["wireguard_ip_address"]
+    assert_equal "healthy", heartbeat.raw_payload["wireguard_status"]
   end
 
   test "records an online notice only once across heartbeat retries" do
