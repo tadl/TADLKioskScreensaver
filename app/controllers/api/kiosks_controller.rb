@@ -38,13 +38,9 @@ class Api::KiosksController < ActionController::API
     hb.chromium_devtools_ms   = payload["chromium_devtools_ms"]
 
     hb.raw_payload = payload
+    hb.save!
 
-    online_notice_recorded = KioskHeartbeat.transaction do
-      hb.save!
-      record_online_notice!(kiosk_id, ts, payload["online_notice"])
-    end
-
-    render json: { ok: true, online_notice_recorded: online_notice_recorded }
+    render json: { ok: true }
   rescue JSON::ParserError, InvalidPayload => e
     render json: { ok: false, error: e.message.presence || "invalid JSON" }, status: :bad_request
   rescue PayloadTooLarge
@@ -123,29 +119,5 @@ class Api::KiosksController < ActionController::API
     parsed
   rescue ArgumentError, TypeError
     nil
-  end
-
-  def record_online_notice!(kiosk_id, occurred_at, value)
-    message = value.to_s.strip.first(KioskLogIngestor::MAX_MESSAGE_LENGTH)
-    return false if message.blank?
-
-    existing_notice = KioskLog
-      .where(kiosk_id: kiosk_id)
-      .where("raw_payload @> ?", { event: { kind: "kiosk_online" } }.to_json)
-      .exists?
-    return true if existing_notice
-
-    KioskLog.create!(
-      kiosk_id: kiosk_id,
-      occurred_at: occurred_at,
-      level: "info",
-      message: message,
-      raw_payload: {
-        "event" => { "kind" => "kiosk_online", "message" => message },
-        "request" => { "remote_ip" => request.remote_ip }
-      }
-    )
-
-    true
   end
 end

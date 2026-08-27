@@ -75,26 +75,4 @@ class Api::KiosksControllerTest < ActionDispatch::IntegrationTest
     assert_equal "10.73.73.24", heartbeat.raw_payload["wireguard_ip_address"]
     assert_equal "healthy", heartbeat.raw_payload["wireguard_status"]
   end
-
-  test "records an online notice only once across heartbeat retries" do
-    payload = {
-      kiosk_id: "nucpac01",
-      ts: Time.current.iso8601,
-      private_ip_address: "192.0.2.15",
-      online_notice: "Kiosk online with private IP address 192.0.2.15"
-    }
-
-    2.times do
-      post api_kiosks_heartbeat_url, params: payload.to_json, headers: @headers
-      assert_response :success
-      assert_equal true, response.parsed_body["online_notice_recorded"]
-    end
-
-    heartbeat = KioskHeartbeat.find_by!(kiosk_id: "nucpac01")
-    notices = KioskLog.where(kiosk_id: "nucpac01", message: payload[:online_notice])
-
-    assert_equal "192.0.2.15", heartbeat.raw_payload["private_ip_address"]
-    assert_equal 1, notices.count
-    assert_equal "kiosk_online", notices.first.raw_payload.dig("event", "kind")
-  end
 end
