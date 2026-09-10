@@ -34,6 +34,7 @@
 * Ruby 3.4.10
 * PostgreSQL
 * Bundler 2.6.9
+* ImageMagick (slide image processing and admin thumbnails)
 
 ### Setup (Development)
 
@@ -89,6 +90,13 @@ bin/rails runner 'User.find_by!(email: "you@example.com").update!(admin: true)'
 Production deployments must mount `storage/` persistently so uploaded slides survive container replacement.
 
 ## Contributing
+
+Run `bin/rails test` and `bin/rails test:system` before submitting changes.
+The browser tests require Google Chrome and run headlessly. CI also checks
+asset compilation, eager loading, Brakeman, and the Ruby advisory database.
+
+Dependabot checks gems and GitHub Actions weekly. JavaScript/CSS loaded from
+CDNs and bundled inside RailsAdmin also need review when updating dependencies.
 
 1. Fork the repo
 2. Create a feature branch

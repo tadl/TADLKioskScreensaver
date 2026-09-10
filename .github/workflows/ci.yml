@@ -27,12 +27,14 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/kiosk_screensaver_test
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
+      - run: sudo apt-get update && sudo apt-get install -y imagemagick
       - run: bin/rails db:prepare
       - run: bin/rails test
+      - run: bin/rails test:system
       - run: bin/rails zeitwerk:check
       - run: bin/rails assets:precompile
       - run: bundle exec brakeman -q --no-pager
