@@ -28,3 +28,20 @@ class Admin::KioskHostsControllerTest < ActionController::TestCase
     assert_response :forbidden
   end
 end
+
+class Admin::KioskHostRoutesTest < ActionDispatch::IntegrationTest
+  test "routes dotted hostnames to the authenticated host-details endpoint" do
+    path = "/admin/kiosk_hosts/demo.example.com.json"
+    route = Rails.application.routes.recognize_path(path)
+
+    assert_equal "admin/kiosk_hosts", route[:controller]
+    assert_equal "demo.example.com", route[:host]
+    assert_equal "json", route[:format].to_s
+
+    get path
+    assert_response :unauthorized
+
+    route = Rails.application.routes.recognize_path("/admin/kiosk_hosts/demo.example.com")
+    assert_equal "demo.example.com", route[:host]
+  end
+end

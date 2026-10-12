@@ -5,10 +5,16 @@ Rails.application.routes.draw do
   match '/auth/failure', to: 'sessions#failure', via: [:get, :post]
 
   namespace :admin do
-    get "kiosk_hosts/:host(.:format)",
+    get "kiosk_hosts/:host.json",
         to: "kiosk_hosts#show",
         defaults: { format: :json },
-        constraints: { host: /[^\/\.]+/ }
+        format: false,
+        constraints: { host: /[^\/]+/ }
+    get "kiosk_hosts/:host",
+        to: "kiosk_hosts#show",
+        defaults: { format: :json },
+        format: false,
+        constraints: { host: /[^\/]+/ }
   end
 
   mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
