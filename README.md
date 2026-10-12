@@ -20,7 +20,7 @@
 
 * Ruby 3.4.10, Rails 8.1
 * PostgreSQL
-* RailsAdmin 3.3.0
+* RailsAdmin 3.3.1
 * CanCanCan
 * ActiveStorage
 * Importmap & Hotwire (Turbo)
@@ -78,6 +78,8 @@
 * Environment variables live in `.env` (loaded via dotenv).
 * ActiveStorage uses local disk (in `storage/`).
 * Kiosk heartbeat and log clients authenticate with the `X-Kiosk-Key` header using `KIOSK_API_PSK`.
+* Global fallback slides are managed by administrators because they can appear on any kiosk.
+* Deleting a host clears its live statuses but preserves historical usage sessions.
 
 ### Initial administrator
 

@@ -16,8 +16,7 @@ class Host < ApplicationRecord
 
   has_many :kiosk_sessions,
            primary_key: :name,
-           foreign_key: :host,
-           dependent: :destroy
+           foreign_key: :host
 
   def to_s
     name
