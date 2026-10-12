@@ -18,7 +18,7 @@
 
 ## Technology Stack
 
-* Ruby 3.4.10, Rails 8.1
+* Ruby 3.4.11, Rails 8.1
 * PostgreSQL
 * RailsAdmin 3.3.1
 * CanCanCan
@@ -31,7 +31,7 @@
 
 ### Prerequisites
 
-* Ruby 3.4.10
+* Ruby 3.4.11
 * PostgreSQL
 * Bundler 2.6.9
 * ImageMagick (slide image processing and admin thumbnails)
