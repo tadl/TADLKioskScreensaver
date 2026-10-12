@@ -34,5 +34,8 @@
       <% end %>
     </h1>
   </div>
+  <% if @kiosk && response.status == 200 %>
+    <%= render "screensaver/player" %>
+  <% end %>
 </body>
 </html>
