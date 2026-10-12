@@ -48,4 +48,19 @@ class MaintenanceTasksTest < ActiveSupport::TestCase
 
     assert_equal session.started_at + 12.hours, session.reload.ended_at
   end
+
+  test "log purge rejects invalid retention without deleting rows" do
+    log = KioskLog.create!(kiosk_id: "retention-host", occurred_at: 200.days.ago)
+    previous_retention = ENV["RETENTION_DAYS"]
+
+    %w[invalid 0 -1 1.5].each do |value|
+      ENV["RETENTION_DAYS"] = value
+      load_rake_task("kiosk_logs:purge_old", "kiosk_logs")
+
+      assert_raises(ArgumentError) { Rake::Task["kiosk_logs:purge_old"].invoke }
+      assert KioskLog.exists?(log.id)
+    end
+  ensure
+    ENV["RETENTION_DAYS"] = previous_retention
+  end
 end

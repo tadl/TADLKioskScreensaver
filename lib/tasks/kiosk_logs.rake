@@ -3,7 +3,8 @@
 namespace :kiosk_logs do
   desc "Delete kiosk logs older than the retention window (default: 180 days)"
   task purge_old: :environment do
-    retention_days = ENV.fetch("RETENTION_DAYS", 180).to_i
+    retention_days = Integer(ENV.fetch("RETENTION_DAYS", "180"), 10)
+    raise ArgumentError, "RETENTION_DAYS must be a positive integer" unless retention_days.positive?
     cutoff = retention_days.days.ago
 
     scope = KioskLog.where("occurred_at < ?", cutoff)
