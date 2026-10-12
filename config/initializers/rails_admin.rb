@@ -464,6 +464,7 @@ RailsAdmin.config do |config|
       field :end_date
       field :fallback do
         label 'Fallback slide?'
+        read_only { !bindings[:controller].current_user.admin? }
         help  'If checked, this slide will show when no other slides are active for a kiosk.'
       end
       field :kiosks do
@@ -496,6 +497,7 @@ RailsAdmin.config do |config|
       end
       field :fallback do
         label 'Fallback slide?'
+        read_only { !bindings[:controller].current_user.admin? }
         help  'If checked, this slide will show when no other slides are active for a kiosk.'
       end
 

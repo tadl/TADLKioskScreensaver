@@ -88,6 +88,7 @@ class User < ApplicationRecord
       .select(:id)
 
     Slide.joins(:kiosks)
+      .where(fallback: false)
       .where(kiosks: { id: allowed_kiosk_ids })
       .where.not(id: inaccessible_slide_ids)
       .distinct

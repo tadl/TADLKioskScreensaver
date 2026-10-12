@@ -15,6 +15,7 @@ class Slide < ApplicationRecord
   validates :display_seconds, numericality: { only_integer: true, greater_than: 0 }
   validate  :image_must_be_attached
   validate  :start_date_before_end_date
+  validate  :fallback_must_be_admin_managed
   validate  :image_must_be_exactly_1080p, if: -> { image.attached? || pending_attachable.present? }
 
   scope :fallbacks, -> { where(fallback: true) }
@@ -82,6 +83,13 @@ class Slide < ApplicationRecord
   end
 
   private
+
+  def fallback_must_be_admin_managed
+    return if Current.user.nil? || Current.user.admin?
+    return unless fallback? || will_save_change_to_fallback?
+
+    errors.add(:fallback, "can only be managed by an admin")
+  end
 
   def image_must_be_attached
     return if image.attached? || pending_attachable.present?

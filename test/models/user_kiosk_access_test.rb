@@ -99,4 +99,28 @@ class UserKioskAccessTest < ActiveSupport::TestCase
     assert ability.cannot?(:read, fallback)
     assert ability.cannot?(:update, fallback)
   end
+
+  test "slide managers cannot publish or change global fallback slides" do
+    role = UserPermission.create!(user: @user, permission: @permission)
+    role.kiosks << @signage_kiosk
+    fallback = create_slide_with_image!(title: "Global Fallback", fallback: true)
+    fallback.kiosks << @signage_kiosk
+
+    assert Ability.new(@user).cannot?(:update, fallback)
+
+    Current.user = @user
+    new_slide = build_slide_with_image(title: "Unauthorized Fallback", fallback: true)
+    assert_not new_slide.valid?
+    assert_includes new_slide.errors[:fallback], "can only be managed by an admin"
+
+    local_slide = create_slide_with_image!(title: "Local Content")
+    local_slide.kiosks << @signage_kiosk
+    local_slide.fallback = true
+    assert_not local_slide.valid?
+
+    fallback.fallback = false
+    assert_not fallback.valid?
+  ensure
+    Current.user = nil
+  end
 end
