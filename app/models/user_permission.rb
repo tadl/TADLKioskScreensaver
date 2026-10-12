@@ -38,7 +38,19 @@ class UserPermission < ApplicationRecord
   end
 
   def sync_admin_flag_on_user
-    is_admin = user.permissions.where(name: 'admin').exists?
-    user.update_column(:admin, is_admin)
+    admin_permission_id = Permission.find_by(name: "admin")&.id
+    return unless admin_permission_id
+
+    # Ordinary roles must not revoke an admin flag set by the bootstrap command.
+    affected_user_ids = []
+    affected_user_ids << user_id if permission_id == admin_permission_id
+    if !destroyed? && !previously_new_record? && permission_id_before_last_save == admin_permission_id
+      affected_user_ids << user_id_before_last_save
+    end
+
+    User.where(id: affected_user_ids.compact.uniq).find_each do |affected_user|
+      is_admin = affected_user.permissions.where(id: admin_permission_id).exists?
+      affected_user.update_column(:admin, is_admin)
+    end
   end
 end

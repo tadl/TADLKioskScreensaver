@@ -37,4 +37,37 @@ class UserPermissionTest < ActiveSupport::TestCase
   ensure
     Current.user = nil
   end
+
+  test "ordinary permission changes preserve a bootstrapped admin" do
+    admin = users(:one)
+    ordinary = admin.user_permissions.find_by!(permission: permissions(:one))
+
+    ordinary.save!
+    assert_predicate admin.reload, :admin?
+
+    ordinary.destroy!
+    assert_predicate admin.reload, :admin?
+  end
+
+  test "default staff provisioning preserves a new admin" do
+    admin = User.create!(email: "bootstrap-admin@example.com", admin: true)
+
+    assert_predicate admin.reload, :admin?
+  end
+
+  test "changing an admin role revokes admin access" do
+    role = UserPermission.create!(user: @target, permission: @admin_permission)
+    assert_predicate @target.reload, :admin?
+
+    role.update!(permission: permissions(:one))
+    assert_not @target.reload.admin?
+  end
+
+  test "moving an admin role synchronizes both users" do
+    role = UserPermission.create!(user: @target, permission: @admin_permission)
+    role.update!(user: @manager)
+
+    assert_not @target.reload.admin?
+    assert_predicate @manager.reload, :admin?
+  end
 end
