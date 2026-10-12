@@ -114,6 +114,20 @@ class ScreensaverControllerTest < ActionDispatch::IntegrationTest
     assert_equal "opac", status.state
   end
 
+  test "fallback slides respect their display dates" do
+    active = create_slide_with_image!(title: "Active Fallback", fallback: true)
+    create_slide_with_image!(
+      title: "Expired Fallback", fallback: true,
+      start_date: Date.current - 10, end_date: Date.current - 1
+    )
+    create_slide_with_image!(title: "Future Fallback", fallback: true, start_date: Date.current + 1)
+
+    get "/slides.json", params: { kiosk: kiosks(:two).slug }
+
+    assert_response :success
+    assert_equal [active.title], response.parsed_body.fetch("slides").map { |slide| slide.fetch("title") }
+  end
+
   test "exit replaces an abandoned open session" do
     kiosk = kiosks(:one)
     host = "stale-catalog-host"
