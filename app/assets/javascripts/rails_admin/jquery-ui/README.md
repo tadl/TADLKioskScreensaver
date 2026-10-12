@@ -1,6 +1,6 @@
 # RailsAdmin jQuery UI position security backport
 
-RailsAdmin 3.3.0 vendors jQuery UI 1.12.1. This Sprockets override preserves
+RailsAdmin 3.3.x vendors jQuery UI 1.12.1. This Sprockets override preserves
 that implementation with the upstream CVE-2021-41184 fix applied: string
 `of` arguments are CSS selectors, never HTML to instantiate.
 

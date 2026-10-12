@@ -30,4 +30,19 @@ class Admin::RailsAdminControllerTest < ActionController::TestCase
     assert_select "input[type=file][name='slide[image]']"
     assert_select "select[name='slide[kiosk_ids][]']"
   end
+
+  test "JSON export cannot invoke record methods from a crafted schema" do
+    assert_no_difference "Slide.count" do
+      get :export, params: {
+        model_name: "slide",
+        json: true,
+        schema: { only: ["title"], methods: ["destroy"] }
+      }
+    end
+
+    assert_response :success
+    exported = JSON.parse(response.body)
+    assert exported.any?
+    assert exported.all? { |slide| slide.keys == ["title"] }
+  end
 end
