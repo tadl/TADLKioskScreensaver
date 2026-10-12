@@ -114,6 +114,7 @@ class Api::KiosksController < ActionController::API
     return nil if val.blank?
 
     parsed = Time.zone.parse(val.to_s)
+    return nil unless parsed
     return nil if parsed < MAX_EVENT_AGE.ago || parsed > MAX_CLOCK_SKEW.from_now
 
     parsed

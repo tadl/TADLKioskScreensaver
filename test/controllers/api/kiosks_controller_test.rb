@@ -75,4 +75,26 @@ class Api::KiosksControllerTest < ActionDispatch::IntegrationTest
     assert_equal "10.73.73.24", heartbeat.raw_payload["wireguard_ip_address"]
     assert_equal "healthy", heartbeat.raw_payload["wireguard_status"]
   end
+
+  test "invalid heartbeat timestamps use receipt time" do
+    freeze_time do
+      post api_kiosks_heartbeat_url,
+        params: { kiosk_id: "timestamp-host", ts: "nonsense" }.to_json,
+        headers: @headers
+
+      assert_response :success
+      assert_equal Time.current, KioskHeartbeat.find_by!(kiosk_id: "timestamp-host").last_seen_at
+    end
+  end
+
+  test "invalid log timestamps use receipt time" do
+    freeze_time do
+      post api_kiosks_logs_url,
+        params: { kiosk_id: "timestamp-host", ts: "nonsense", events: [{ ts: "nonsense", message: "test" }] }.to_json,
+        headers: @headers
+
+      assert_response :success
+      assert_equal Time.current, KioskLog.find_by!(kiosk_id: "timestamp-host").occurred_at
+    end
+  end
 end

@@ -76,7 +76,8 @@ class KioskLogIngestor
     return nil if value.blank?
 
     parsed = Time.zone.parse(value.to_s)
-    return nil if parsed < 1.year.ago || parsed > 1.day.from_now
+    return nil unless parsed
+    return nil if parsed < now - 1.year || parsed > now + 1.day
 
     parsed
   rescue ArgumentError, TypeError
