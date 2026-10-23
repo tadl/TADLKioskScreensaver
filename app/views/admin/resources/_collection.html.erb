@@ -1,0 +1,92 @@
+<section class="admin-panel">
+  <div class="admin-toolbar">
+    <%= form_with url: collection_path, method: :get, class: "admin-filter-form" do |f| %>
+      <div>
+        <%= f.label :q, "Search", class: "sr-only" %>
+        <%= f.search_field :q, value: params[:q], placeholder: "Search #{admin_resource_title.downcase}…", class: "admin-search" %>
+      </div>
+      <% if lookup_context.exists?("filters", [controller_path], true) %>
+        <%= render "#{controller_path}/filters" %>
+      <% end %>
+      <div>
+        <%= f.label :sort, "Sort by", class: "sr-only" %>
+        <%= f.select :sort, sort_columns.map { |name| [name.humanize, name] }, { selected: params[:sort] }, class: "admin-input", aria: { label: "Sort by" } %>
+      </div>
+      <div>
+        <%= f.label :direction, "Direction", class: "sr-only" %>
+        <%= f.select :direction, [["Ascending", "asc"], ["Descending", "desc"]], { selected: params[:direction] }, class: "admin-input" %>
+      </div>
+      <%= f.submit "Apply", class: "admin-button admin-button-secondary" %>
+      <%= link_to "Reset", collection_path, class: "admin-text-link" %>
+      <details class="w-full">
+        <summary class="admin-text-link cursor-pointer">Filter by a field</summary>
+        <div class="flex flex-wrap items-center gap-2 mt-3">
+          <%= select_tag :filter_field, options_for_select(filter_columns.map { |field| [field.humanize, field] }, params[:filter_field]), include_blank: "Choose a field", class: "admin-input", aria: { label: "Filter field" } %>
+          <%= select_tag :filter_operator, options_for_select([["Equals", "equals"], ["Contains", "contains"], ["Before / less than", "before"], ["After / greater than", "after"]], params[:filter_operator]), class: "admin-input", aria: { label: "Filter comparison" } %>
+          <%= text_field_tag :filter_value, params[:filter_value], class: "admin-input", placeholder: "Value", aria: { label: "Filter value" } %>
+          <%= submit_tag "Filter", class: "admin-button admin-button-secondary" %>
+        </div>
+      </details>
+    <% end %>
+    <details class="admin-export">
+      <summary class="admin-button admin-button-secondary">Export results</summary>
+      <%= form_with url: export_path, method: :get, data: { turbo: false }, class: "admin-export-options" do %>
+        <% %w[q sort direction schedule fallback kiosk_group_id permission_id active filter_field filter_operator filter_value].each do |key| %>
+          <%= hidden_field_tag key, params[key] if params[key].present? %>
+        <% end %>
+        <p class="font-semibold mb-2">Columns to include</p>
+        <%= hidden_field_tag "fields[]", "" %>
+        <% export_columns.each do |field| %>
+          <label>
+            <%= check_box_tag "fields[]", field, true %>
+            <%= field.humanize %>
+          </label>
+        <% end %>
+        <div class="flex gap-2 mt-4">
+          <% %w[csv json xml].each do |format| %>
+            <%= button_tag format.upcase, name: :format, value: format, class: "admin-button admin-button-secondary" %>
+          <% end %>
+        </div>
+      <% end %>
+    </details>
+  </div>
+  <%= form_with url: bulk_path, method: :post, data: { turbo: false, controller: "selection confirmation", action: "submit->confirmation#submit" } do %>
+    <div class="admin-bulk-toolbar">
+      <span>
+        <strong>
+          <%= @total %>
+        </strong>
+        <%= "record".pluralize(@total) %>
+        <span class="admin-muted"> · <span data-selection-target="count">0</span> selected</span>
+      </span>
+      <div class="flex flex-wrap gap-2">
+        <% %w[csv json xml].each do |format| %>
+          <%= button_tag "Export #{format.upcase}", name: :operation, value: format, class: "admin-small-button" %>
+        <% end %>
+        <% if can?(:destroy, resource_class) %>
+          <%= button_tag "Delete selected", name: :operation, value: "destroy", class: "admin-small-button text-red-700", data: { confirm: "Delete the selected records? This cannot be undone." } %>
+        <% end %>
+      </div>
+    </div>
+    <% if @records.any? %>
+      <div class="admin-table-scroll">
+        <%= render "#{controller_path}/table", records: @records %>
+      </div>
+    <% else %>
+      <div class="admin-empty">
+        <span class="admin-empty-symbol">◇</span>
+        <h2>No records to show</h2>
+        <p>Try another search or filter.<% if resource_creation_allowed? %> You can also add your first <%= resource_class.model_name.human.downcase %>.<% end %>
+        </p>
+      </div>
+    <% end %>
+  <% end %>
+  <nav class="admin-pagination" aria-label="Pagination">
+    <span>Page <%= @page %> of <%= [(@total / 24.0).ceil, 1].max %>
+    </span>
+    <div>
+      <%= link_to "← Previous", url_for(request.query_parameters.merge(page: @page - 1)), class: "admin-button admin-button-secondary" if @page > 1 %>
+      <%= link_to "Next →", url_for(request.query_parameters.merge(page: @page + 1)), class: "admin-button admin-button-secondary" if @page * 24 < @total %>
+    </div>
+  </nav>
+</section>

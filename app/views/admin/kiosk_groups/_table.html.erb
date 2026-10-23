@@ -1,0 +1,30 @@
+<table class="admin-table">
+  <thead>
+    <tr>
+      <%= render "admin/resources/select_all" %>
+      <th>Group</th>
+      <th>Slug</th>
+      <th>Location shortname</th>
+      <th>Kiosks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% records.each do |group| %>
+      <tr>
+        <%= render "admin/resources/select_record", record: group %>
+        <td>
+          <%= link_to group.name, admin_kiosk_group_path(group), class: "admin-record-link" %>
+        </td>
+        <td>
+          <%= group.slug %>
+        </td>
+        <td>
+          <%= group.location_shortname.presence || "—" %>
+        </td>
+        <td>
+          <%= group.kiosks.size %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

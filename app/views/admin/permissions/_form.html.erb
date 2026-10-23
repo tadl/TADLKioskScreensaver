@@ -1,0 +1,12 @@
+<section class="admin-panel admin-panel-body admin-form-narrow">
+  <h2>Permission details</h2>
+  <div class="admin-flash admin-flash-notice">Permission names are used by application access rules. Renaming or deleting one changes access for everyone assigned to it.</div>
+  <div class="admin-field">
+    <%= f.label :name %>
+    <%= f.text_field :name, required: true %>
+  </div>
+  <div class="admin-field">
+    <%= f.label :description %>
+    <%= f.text_area :description, rows: 4 %>
+  </div>
+</section>

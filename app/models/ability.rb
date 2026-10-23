@@ -13,8 +13,7 @@ class Ability
       return
     end
 
-    # 2) RailsAdmin itself
-    can :access,    :rails_admin
+    # 2) Every signed-in staff account can view its scoped dashboard.
     can :read,      :dashboard
 
     # 3) UserPermissions & Permissions

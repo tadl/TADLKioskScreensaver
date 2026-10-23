@@ -1,0 +1,20 @@
+<section class="admin-panel admin-panel-body admin-form-narrow">
+  <h2>Host details</h2>
+  <div class="admin-field">
+    <%= f.label :name, "Hostname" %>
+    <%= f.text_field :name, required: true %>
+    <p class="admin-field-hint">Must match the identifier reported by the kiosk. Renaming a host disconnects it from existing status and session records.</p>
+  </div>
+  <div class="admin-field">
+    <%= f.label :location %>
+    <%= f.text_field :location %>
+  </div>
+  <div class="admin-field">
+    <label class="admin-checkbox-label">
+      <%= f.check_box :active %> Active host</label>
+  </div>
+  <div class="admin-field">
+    <%= f.label :notes %>
+    <%= f.text_area :notes, rows: 5 %>
+  </div>
+</section>

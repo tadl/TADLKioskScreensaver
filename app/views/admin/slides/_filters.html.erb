@@ -1,0 +1,2 @@
+<%= select_tag :schedule, options_for_select([["Any schedule", ""], ["Active", "active"], ["Upcoming", "upcoming"], ["Expired", "expired"]], params[:schedule]), class: "admin-input", aria: { label: "Schedule" } %>
+<%= select_tag :fallback, options_for_select([["All slides", ""], ["Fallback slides", "true"], ["Regular slides", "false"]], params[:fallback]), class: "admin-input", aria: { label: "Fallback" } %>

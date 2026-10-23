@@ -1,0 +1,27 @@
+<%= render "admin/resources/detail_header" %>
+<section class="admin-panel admin-panel-body">
+  <dl class="admin-details">
+    <dt>Location</dt>
+    <dd>
+      <%= @record.location.presence || "—" %>
+    </dd>
+    <dt>Status</dt>
+    <dd>
+      <%= @record.active? ? "Active" : "Inactive" %>
+    </dd>
+    <dt>Live status records</dt>
+    <dd>
+      <%= @record.kiosk_statuses.count %>
+    </dd>
+    <dt>Usage sessions</dt>
+    <dd>
+      <%= @record.kiosk_sessions.count %>
+    </dd>
+    <dt>Notes</dt>
+    <dd class="whitespace-pre-wrap">
+      <%= @record.notes.presence || "—" %>
+    </dd>
+  </dl>
+  <p class="admin-field-hint mt-5">Deleting this host clears live statuses and preserves historical usage sessions.</p>
+</section>
+<%= render "admin/shared/host_details", host: @record.name %>

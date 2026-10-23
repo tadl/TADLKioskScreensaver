@@ -1,0 +1,30 @@
+<table class="admin-table">
+  <thead>
+    <tr>
+      <%= render "admin/resources/select_all" %>
+      <th>Hostname</th>
+      <th>Location</th>
+      <th>Status</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% records.each do |host| %>
+      <tr>
+        <%= render "admin/resources/select_record", record: host %>
+        <td>
+          <%= link_to host.name, admin_host_path(host), class: "admin-record-link" %>
+        </td>
+        <td>
+          <%= host.location.presence || "—" %>
+        </td>
+        <td>
+          <%= admin_badge(host.active? ? "Active" : "Inactive", host.active? ? "success" : "neutral") %>
+        </td>
+        <td>
+          <%= truncate(host.notes.to_s, length: 100) %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

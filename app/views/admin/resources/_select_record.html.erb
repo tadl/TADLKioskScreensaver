@@ -1,0 +1,3 @@
+<td class="admin-select-cell">
+  <%= check_box_tag "ids[]", record.id, false, aria: { label: "Select #{admin_record_label(record)}" }, data: { selection_target: "item", action: "selection#update" } %>
+</td>

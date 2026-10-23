@@ -1,0 +1,48 @@
+<div class="admin-form-grid">
+  <section class="admin-panel admin-panel-body">
+    <h2>Slide details</h2>
+    <div class="admin-field">
+      <%= f.label :title %>
+      <%= f.text_field :title %>
+      <p class="admin-field-hint">Leave blank to use the image filename.</p>
+    </div>
+    <div class="admin-field">
+      <%= f.label :image %>
+      <%= f.file_field :image, accept: "image/*" %>
+      <p class="admin-field-hint">Upload an image exactly 1920 × 1080 pixels. The original is kept at full resolution.</p>
+      <% if @record.image_attachment&.persisted? %>
+        <div class="admin-form-preview">
+          <%= admin_thumbnail(@record, size: 360) %>
+        </div>
+      <% end %>
+    </div>
+    <div class="admin-field">
+      <%= f.label :display_seconds, "Display time in seconds" %>
+      <%= f.number_field :display_seconds, min: 1, step: 1, placeholder: "10" %>
+      <p class="admin-field-hint">Defaults to 10 seconds. Playback uses a minimum of 3 seconds and a maximum of 10 minutes.</p>
+    </div>
+    <div class="admin-field-row">
+      <div class="admin-field">
+        <%= f.label :start_date %>
+        <%= f.date_field :start_date %>
+        <p class="admin-field-hint">Defaults to today for a new slide.</p>
+      </div>
+      <div class="admin-field">
+        <%= f.label :end_date %>
+        <%= f.date_field :end_date %>
+        <p class="admin-field-hint">Optional. This date is included.</p>
+      </div>
+    </div>
+    <% if current_user.admin? %>
+      <div class="admin-field">
+        <label class="admin-checkbox-label">
+          <%= f.check_box :fallback %> Global fallback slide</label>
+        <p class="admin-field-hint">May appear on any kiosk when no assigned slides are active. Display dates still apply.</p>
+      </div>
+    <% end %>
+  </section>
+  <section class="admin-panel admin-panel-body">
+    <h2>Where it appears</h2>
+    <%= render "admin/shared/assignments", f: f, association: :kiosk_ids, choices: @kiosks, label: "Assign to kiosks", hint: "Choose the screens for this slide. Existing assignments outside your access are preserved." %>
+  </section>
+</div>

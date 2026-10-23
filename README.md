@@ -12,7 +12,7 @@
 * **Slide Management**: Upload 1920×1080 images, set display duration, optional start/end dates.
 * **Kiosk Assignment**: Assign slides to one or more kiosks.
 * **User Permissions**: Granular access control with CanCanCan and user/group permissions.
-* **Admin UI**: Full CRUD admin interface powered by RailsAdmin.
+* **Admin UI**: Custom Tailwind interface for content, host inventory, staff access, reporting, and exports.
 * **Kiosk Health**: Authenticated heartbeat reporting for browser and WireGuard management status.
 * **Image Storage**: ActiveStorage for uploads; local disk in development, mounted storage in production.
 
@@ -20,7 +20,7 @@
 
 * Ruby 3.4.11, Rails 8.1
 * PostgreSQL
-* RailsAdmin 3.3.1
+* Tailwind CSS 4, ERB, Turbo, and Stimulus
 * CanCanCan
 * ActiveStorage
 * Importmap & Hotwire (Turbo)
@@ -93,17 +93,18 @@ Production deployments must mount `storage/` persistently so uploaded slides sur
 
 ## Contributing
 
-The custom Tailwind admin replacement is planned on
-`codex/tailwind-admin-refactor`. See the [admin refactor plan](docs/admin-refactor-plan.md)
-for the functionality inventory, proposed interface, delivery sequence, and
-verification criteria. RailsAdmin remains the current admin until that work is complete.
+The custom Tailwind admin is implemented on `codex/tailwind-admin-refactor`.
+See the [local testing guide](docs/admin-local-testing.md) for setup and review
+workflows, and the [admin refactor plan](docs/admin-refactor-plan.md) for the
+functionality inventory and implementation decisions.
 
 Run `bin/rails test` and `bin/rails test:system` before submitting changes.
 The browser tests require Google Chrome and run headlessly. CI also checks
 asset compilation, eager loading, Brakeman, and the Ruby advisory database.
 
-Dependabot checks gems and GitHub Actions weekly. JavaScript/CSS loaded from
-CDNs and bundled inside RailsAdmin also need review when updating dependencies.
+Dependabot checks gems and GitHub Actions weekly. Review vendored JavaScript
+separately; the admin serves Chart.js locally, with its version, license, and
+checksum recorded in [vendor/javascript](vendor/javascript/README.md).
 
 1. Fork the repo
 2. Create a feature branch

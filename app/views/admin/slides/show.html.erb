@@ -1,0 +1,51 @@
+<%= render "admin/resources/detail_header" %>
+<% unless can?(:update, @record) %>
+  <div class="admin-flash admin-flash-notice">This slide is read only for your account. Shared content and global fallbacks are managed by an administrator.</div>
+<% end %>
+<div class="admin-form-grid">
+  <section class="admin-panel admin-panel-body">
+    <div class="admin-large-preview">
+      <%= admin_thumbnail(@record, size: 800) %>
+    </div>
+  </section>
+  <section class="admin-panel admin-panel-body">
+    <h2>Slide details</h2>
+    <dl class="admin-details">
+      <dt>Schedule</dt>
+      <dd>
+        <%= slide_schedule(@record) %>
+      </dd>
+      <dt>Display time</dt>
+      <dd>
+        <%= @record.display_seconds %> seconds</dd>
+      <dt>Start date</dt>
+      <dd>
+        <%= @record.start_date || "Any time" %>
+      </dd>
+      <dt>End date</dt>
+      <dd>
+        <%= @record.end_date || "No end date" %>
+      </dd>
+      <dt>Global fallback</dt>
+      <dd>
+        <%= @record.fallback? ? "Yes" : "No" %>
+      </dd>
+      <dt>Link</dt>
+      <dd>
+        <%= @record.link.presence || "—" %>
+      </dd>
+      <dt>Updated</dt>
+      <dd>
+        <%= l @record.updated_at, format: :long %>
+      </dd>
+    </dl>
+    <h2 class="mt-6">Assigned kiosks</h2>
+    <ul class="admin-link-list">
+      <% @record.kiosks.where(id: admin_accessible_kiosk_ids).order(:name).each do |kiosk| %>
+        <li>
+          <%= can?(:read, kiosk) ? link_to(kiosk.name, admin_kiosk_path(kiosk)) : kiosk.name %>
+        </li>
+      <% end %>
+    </ul>
+  </section>
+</div>

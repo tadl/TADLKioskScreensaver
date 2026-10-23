@@ -1,8 +1,11 @@
-<main class="dashboard container mx-auto py-0">
-  <h2 class="mb-3">Staff Login Required</h2>
-  <p class="mb-4">Please sign in with your staff Google account.</p>
+<section class="admin-login-card">
+  <%= image_tag "mascot-kio.png", alt: "" %>
+  <p class="admin-eyebrow">Traverse Area District Library</p>
+  <h1>Kiosk Screensaver</h1>
+  <p class="my-5 text-sm leading-relaxed text-slate-500">Sign in with your staff Google account to manage slides, screens, and the spaces they serve.</p>
+  <% flash.each do |_, message| %><div class="admin-flash admin-flash-alert" role="alert"><%= message %></div><% end %>
   <form action="/auth/google_oauth2" method="post" data-turbo="false">
     <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-    <button type="submit" class="btn btn-primary btn-lg">Sign in with Google</button>
+    <button type="submit" class="admin-button admin-button-primary w-full">Sign in with Google →</button>
   </form>
-</main>
+</section>

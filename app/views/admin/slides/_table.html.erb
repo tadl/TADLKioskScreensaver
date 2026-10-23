@@ -1,0 +1,50 @@
+<table class="admin-table">
+  <thead>
+    <tr>
+      <%= render "admin/resources/select_all" %>
+      <th>Slide</th>
+      <th>Schedule</th>
+      <th>Display time</th>
+      <th>Kiosks</th>
+      <th>Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% records.each do |slide| %>
+      <tr>
+        <%= render "admin/resources/select_record", record: slide %>
+        <td>
+          <div class="admin-slide-cell">
+            <%= admin_thumbnail(slide) %>
+            <div>
+              <%= link_to slide.title, admin_slide_path(slide), class: "admin-record-link" %>
+              <p class="admin-muted">
+                <% md = slide.image_metadata %>
+                <%= md['width'] && md['height'] ? "#{md['width']} × #{md['height']}" : "Image unavailable" %>
+                <% if md['width'] != 1920 || md['height'] != 1080 %>
+                  <%= admin_badge("Check image", "warning") %>
+                <% end %>
+              </p>
+            </div>
+          </div>
+        </td>
+        <td>
+          <%= slide_schedule(slide) %>
+          <p class="admin-muted mt-2">
+            <%= slide.start_date || "Any time" %> → <%= slide.end_date || "No end date" %>
+          </p>
+        </td>
+        <td>
+          <%= slide.display_seconds %> seconds</td>
+        <td>
+          <%= slide.kiosks.count { |kiosk| admin_accessible_kiosk_ids.include?(kiosk.id) } %> assigned<% unless can?(:update, slide) %>
+            <p class="admin-muted">Read only</p>
+          <% end %>
+        </td>
+        <td>
+          <%= admin_badge(slide.fallback? ? "Fallback" : "Regular", slide.fallback? ? "warning" : "neutral") %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

@@ -1,0 +1,13 @@
+<%= render "admin/resources/detail_header" %>
+<section class="admin-panel admin-panel-body">
+  <dl class="admin-details">
+    <dt>Name</dt>
+    <dd>
+      <%= @record.name %>
+    </dd>
+    <dt>Description</dt>
+    <dd>
+      <%= @record.description.presence || "—" %>
+    </dd>
+  </dl>
+</section>

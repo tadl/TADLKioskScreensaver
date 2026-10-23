@@ -1,0 +1,43 @@
+<div class="admin-table-scroll">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Host</th>
+        <th>Sessions</th>
+        <th>First session</th>
+        <th>Last session</th>
+        <th>Utilization</th>
+        <th>Avg. duration</th>
+        <th>Total minutes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% hosts.sort_by { |host, _| host.to_s }.each do |host, host_sessions| %>
+        <% stats = kiosk_usage_host_stats(host_sessions, start_date, end_date, group) %>
+        <tr>
+          <td>
+            <%= host.presence || "Unknown" %>
+          </td>
+          <td>
+            <%= stats[:count] %>
+          </td>
+          <td>
+            <%= stats[:first_started_at]&.strftime('%Y-%m-%d %H:%M') %>
+          </td>
+          <td>
+            <%= stats[:last_ended_at]&.strftime('%Y-%m-%d %H:%M') || "In progress" %>
+          </td>
+          <td>
+            <%= stats[:utilization_percent] ? "#{stats[:utilization_percent]}%" : "—" %>
+          </td>
+          <td>
+            <%= stats[:average_minutes] ? "#{stats[:average_minutes]} min" : "—" %>
+          </td>
+          <td>
+            <%= stats[:total_minutes] || "—" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

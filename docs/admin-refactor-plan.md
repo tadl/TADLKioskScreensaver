@@ -8,6 +8,41 @@ behaviors easier to understand and test.
 Development branch: `codex/tailwind-admin-refactor`.
 Initial baseline: `3e3153d`, reviewed October 23, 2026.
 
+## Implementation status
+
+The custom admin now runs at `/admin` on the development branch. It includes
+content management, host inventory and diagnostics, user-permission editing,
+permission definitions, live status, usage reports, field filters, sorting,
+pagination, CSV/JSON/XML exports, and selected-record actions.
+
+RailsAdmin, its overrides and patches, jQuery UI, and SassC have been removed.
+Chart.js is served locally. The database schema, screensaver routes, telemetry
+API, stored uploads, and maintenance tasks retain their existing contracts.
+The temporary `/admin-next` route proposed below was not needed for the finished
+development branch; local review uses `/admin` directly.
+
+The implementation makes these deliberate corrections:
+
+- User managers can see the access-management screens their existing abilities
+  authorize. Self-elevation and administrator-role restrictions still apply.
+- Association writes roll back when validation fails. Bulk deletion is atomic
+  when a selected record cannot be deleted.
+- Invalid image replacement preserves the original saved image.
+- Exports use explicit scalar/association allowlists, scope related content,
+  exclude sensitive account fields, and guard CSV formula cells.
+- A slide edit that removes the actor's last kiosk assignment returns to the
+  list instead of redirecting to an inaccessible detail page.
+
+New user-permission record creation remains unavailable, matching the old admin.
+Accounts are still provisioned by Google sign-in and existing role records can
+be edited. Useful legacy list/detail/edit GET bookmarks redirect to the new UI.
+Legacy mutation requests are not forwarded.
+
+Use the [local testing guide](admin-local-testing.md) to review the real staff
+workflows and provide feedback. The architecture and delivery sequence below
+retain the original planning context; production release still requires local
+acceptance and separate deployment authorization.
+
 ## Recommended direction
 
 Keep Rails, PostgreSQL, Active Storage, Google OAuth, CanCanCan, importmap,

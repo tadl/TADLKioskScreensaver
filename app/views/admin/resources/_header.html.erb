@@ -1,0 +1,14 @@
+<div class="admin-page-header">
+  <div>
+    <p class="admin-eyebrow">Your workspace</p>
+    <h1>
+      <%= admin_resource_title %>
+    </h1>
+    <p class="admin-description">
+      <%= description %>
+    </p>
+  </div>
+  <% if resource_creation_allowed? %>
+    <%= link_to "+ Add #{resource_class.model_name.human.downcase}", new_record_path, class: "admin-button admin-button-primary" %>
+  <% end %>
+</div>

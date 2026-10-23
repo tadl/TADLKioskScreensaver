@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      <%= content_for?(:title) ? yield(:title) : admin_resource_title %> · Kiosk Screensaver</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="turbo-cache-control" content="no-cache">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="admin-app">
+    <a href="#main-content" class="admin-skip-link">Skip to content</a>
+    <aside class="admin-sidebar">
+      <%= link_to admin_root_path, class: "admin-brand" do %>
+        <span class="admin-brand-mark">K<span>•</span>
+        </span>
+        <span>Kiosk Screensaver<small>Traverse Area District Library</small>
+        </span>
+      <% end %>
+      <nav aria-label="Main navigation" class="hidden md:block">
+        <%= render "admin/shared/navigation" %>
+      </nav>
+      <details class="md:hidden admin-mobile-nav">
+        <summary>Navigation</summary>
+        <nav aria-label="Mobile navigation">
+          <%= render "admin/shared/navigation" %>
+        </nav>
+      </details>
+      <div class="admin-sidebar-footer">
+        <%= image_tag "mascot-kio.png", alt: "", width: 52, height: 52 %>
+        <div>A little more life<br>on every screen.</div>
+      </div>
+    </aside>
+    <div class="admin-workspace">
+      <header class="admin-topbar">
+        <span class="admin-topbar-label">TADL <span>/</span> Digital signage</span>
+        <div class="admin-account">
+          <span class="admin-avatar">
+            <%= (current_user.name.presence || current_user.email).first.upcase %>
+          </span>
+          <span class="hidden sm:inline">
+            <%= current_user.name.presence || current_user.email %>
+          </span>
+          <%= button_to "Sign out", logout_path, method: :delete, class: "admin-signout" %>
+        </div>
+      </header>
+      <main id="main-content" class="admin-main">
+        <% flash.each do |kind, message| %>
+          <div class="admin-flash <%= kind.to_s == 'alert' ? 'admin-flash-alert' : 'admin-flash-notice' %>" role="<%= kind.to_s == 'alert' ? 'alert' : 'status' %>">
+            <%= message %>
+          </div>
+        <% end %>
+        <%= yield %>
+      </main>
+      <footer class="admin-footer">TADL Kiosk Screensaver <span>Made for the spaces we share.</span>
+      </footer>
+    </div>
+  </body>
+</html>

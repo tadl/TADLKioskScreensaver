@@ -20,6 +20,11 @@ class Slide < ApplicationRecord
 
   scope :fallbacks, -> { where(fallback: true) }
   scope :with_image, -> { joins(:image_attachment) }
+  scope :with_valid_dimensions, -> {
+    joins(image_attachment: :blob)
+      .where("(active_storage_blobs.metadata::json->>'width') = '1920'")
+      .where("(active_storage_blobs.metadata::json->>'height') = '1080'")
+  }
   scope :active_on, ->(date) {
     where("start_date IS NULL OR start_date <= ?", date)
       .where("end_date IS NULL OR end_date >= ?", date)
@@ -47,7 +52,7 @@ class Slide < ApplicationRecord
     false
   end
 
-  def rails_admin_label
+  def display_label
     if title.present?
       title
     elsif image.attached?
@@ -56,7 +61,7 @@ class Slide < ApplicationRecord
       "Slide ##{id}"
     end
   end
-  def to_s = rails_admin_label
+  def to_s = display_label
 
   def image_metadata
     ensure_blob_dimensions_cached
@@ -102,18 +107,15 @@ class Slide < ApplicationRecord
 
     if w.nil? || h.nil?
       errors.add(:image, "couldn’t be analyzed. Please try again.")
-      detach_pending_upload!
       return
     end
 
     unless w == 1920 && h == 1080
       errors.add(:image, "must be exactly 1920×1080 (got #{w}×#{h})")
-      detach_pending_upload!
     end
   rescue => e
     Rails.logger.warn("[ImageDimensions] #{e.class}: #{e.message}")
     errors.add(:image, "couldn’t be analyzed. Please try again.")
-    detach_pending_upload!
   end
 
   def read_dimensions_now
@@ -168,14 +170,6 @@ class Slide < ApplicationRecord
     change&.attachable
   rescue
     nil
-  end
-
-  def detach_pending_upload!
-    if attachment_changes["image"].present?
-      image.detach
-    end
-  rescue => e
-    Rails.logger.debug("[ImageDimensions] detach skipped: #{e.class}: #{e.message}")
   end
 
   def ensure_blob_dimensions_cached

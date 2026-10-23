@@ -71,8 +71,7 @@ group :test do
 end
 
 gem "tailwindcss-rails"
-gem "sassc-rails"
-gem "rails_admin", "~> 3.3"
+gem "csv", "~> 3.3"
 gem "mini_magick"
 gem "omniauth"
 gem "omniauth-google-oauth2"

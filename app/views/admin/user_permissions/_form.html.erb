@@ -1,0 +1,25 @@
+<div class="admin-form-grid">
+  <section class="admin-panel admin-panel-body">
+    <h2>Staff access</h2>
+    <div class="admin-field">
+      <label>Staff member</label>
+      <p class="font-semibold">
+        <%= @record.user.name.presence || @record.user.email %>
+      </p>
+      <p class="admin-muted">
+        <%= @record.user.email %>
+      </p>
+      <p class="admin-field-hint">Identity is maintained by Google sign-in.</p>
+    </div>
+    <div class="admin-field">
+      <%= f.label :permission_id, "Permission" %>
+      <%= f.collection_select :permission_id, @permissions, :id, :name %>
+    </div>
+    <div class="admin-flash admin-flash-notice">Group assignments include every kiosk in that group. Individual kiosk assignments grant access to just those kiosks. Global management permissions can grant wider access.</div>
+  </section>
+  <section class="admin-panel admin-panel-body">
+    <h2>Assignments</h2>
+    <%= render "admin/shared/assignments", f: f, association: :kiosk_group_ids, choices: @groups, label: "Kiosk groups", hint: "Access to every kiosk in each selected group." %>
+    <%= render "admin/shared/assignments", f: f, association: :kiosk_ids, choices: @kiosks, label: "Individual kiosks", hint: "Grant narrower access without including the entire group." %>
+  </section>
+</div>

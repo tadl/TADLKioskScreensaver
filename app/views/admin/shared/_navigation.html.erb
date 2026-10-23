@@ -1,0 +1,11 @@
+<p class="admin-nav-heading">Workspace</p>
+<%= admin_nav_link "Overview", admin_root_path, "overview" %>
+<%= admin_nav_link "Slides", admin_slides_path, "slides" if can?(:read, Slide) %>
+<%= admin_nav_link "Kiosks", admin_kiosks_path, "kiosks" if can?(:read, Kiosk) %>
+<%= admin_nav_link "Kiosk groups", admin_kiosk_groups_path, "groups" if can?(:read, KioskGroup) %>
+<% if can?(:read, Host) || can?(:read, UserPermission) || can?(:read, Permission) %>
+  <p class="admin-nav-heading">Administration</p>
+  <%= admin_nav_link "Hosts", admin_hosts_path, "hosts" if can?(:read, Host) %>
+  <%= admin_nav_link "Users & access", admin_user_permissions_path, "users" if can?(:read, UserPermission) %>
+  <%= admin_nav_link "Permissions", admin_permissions_path, "permissions" if can?(:read, Permission) %>
+<% end %>
