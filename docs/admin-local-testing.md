@@ -96,3 +96,30 @@ Automated local checks do not validate real Google OAuth, physical kiosk clients
 or production location-feed responses. Those integrations should be included in
 your local acceptance checks where available. Production deployment is separate
 from committing and pushing this development branch.
+
+## Refreshing the Help screenshots
+
+The account menu links to `/admin/help`. Its slide-upload guide uses four real
+browser screenshots with synthetic staff, kiosk, and event records. The
+RailsAdmin comparison was checked against the former application configuration
+and RailsAdmin 3.3.1's picker and save controls.
+
+Use an isolated local test database to regenerate the images. Rails loads test
+fixtures into that database; never point this command at development data or a
+production copy. The capture mode requires a loopback database host and a
+database name ending in `_test`.
+
+```sh
+env RAILS_ENV=test \
+  DATABASE_URL=postgresql://127.0.0.1:5432/kiosk_screensaver_test \
+  LOCATION_DATA_URL=http://127.0.0.1:9/locations \
+  GOOGLE_CLIENT_ID= GOOGLE_CLIENT_SECRET= GOOGLE_DOMAIN=example.com \
+  PARALLEL_WORKERS=1 CAPTURE_ADMIN_HELP=1 \
+  bin/rails test:system -i /staff_can_add/
+```
+
+The workflow test writes the four PNGs into `app/assets/images/help/` only when
+`CAPTURE_ADMIN_HELP=1` is set. Ordinary test runs do not modify them. The sample
+poster is drawn from SVG in the browser; no real uploads or external images are
+used. Review every screenshot before committing, and update the image width
+and height attributes in the Help template if the capture dimensions change.

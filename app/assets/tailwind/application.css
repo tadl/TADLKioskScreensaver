@@ -42,7 +42,7 @@
   .admin-account[open] .admin-account-chevron { @apply rotate-180; }
   .admin-account-panel { @apply absolute right-0 top-full z-30 mt-2 w-64 max-w-[calc(100vw-2.5rem)] rounded-xl border border-slate-200 bg-white p-2 shadow-lg; }
   .admin-account-identity { @apply mb-1 border-b border-slate-100 px-3 py-3; }
-  .admin-signout { @apply flex min-h-10 w-full items-center rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50; }
+  .admin-account-link, .admin-signout { @apply flex min-h-10 w-full items-center rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50; }
   .admin-main { @apply mx-auto max-w-[1600px] px-5 py-7 lg:px-10 lg:py-10; }
   .admin-footer { @apply mx-auto flex max-w-[1600px] flex-wrap justify-between gap-2 px-5 py-6 text-[11px] text-slate-500 lg:px-10; }
   .admin-page-header { @apply mb-7 flex flex-wrap items-center justify-between gap-5; }
@@ -163,4 +163,19 @@
   .admin-login-brand { @apply mx-auto mb-6 size-32 overflow-hidden rounded-2xl; }
   .admin-login-brand img { @apply size-full object-cover; }
   .admin-login-card h1 { @apply text-3xl font-semibold tracking-tight text-tadl-900; }
+  .admin-help { @apply max-w-5xl space-y-6 text-sm leading-relaxed text-slate-600; }
+  .admin-help h2 { @apply mb-3 text-xl font-semibold tracking-tight text-tadl-900; }
+  .admin-help h3 { @apply mb-3 text-lg font-semibold text-tadl-900; }
+  .admin-help p + p { @apply mt-3; }
+  .admin-help strong { @apply font-semibold text-slate-800; }
+  .admin-help-list { @apply mt-3 list-disc space-y-2 pl-5; }
+  .admin-help-note { @apply mt-4 rounded-lg border border-tadl-100 bg-tadl-50 px-4 py-3 text-tadl-900; }
+  .admin-help-steps { @apply space-y-6; }
+  .admin-help figure { @apply mt-5; }
+  .admin-help figure > a { @apply block overflow-hidden rounded-lg border border-slate-200 bg-slate-50; }
+  .admin-help figure img { @apply block h-auto w-full; }
+  .admin-help figcaption { @apply mt-2 text-xs leading-relaxed text-slate-500; }
+  .admin-help .admin-table td { @apply align-top; }
+  .admin-help .admin-table th { @apply whitespace-normal; }
+  .admin-help .admin-table tbody th { @apply text-xs normal-case tracking-normal text-slate-700; }
 }

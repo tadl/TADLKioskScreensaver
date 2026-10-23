@@ -1,0 +1,105 @@
+<div class="admin-page-header">
+  <div>
+    <h1>Help</h1>
+    <p class="admin-description">A guide to managing content in Kiosk Screensaver.</p>
+  </div>
+  <%= link_to "+ Add slide", new_admin_slide_path, class: "admin-button admin-button-primary" if can?(:create, Slide) %>
+</div>
+
+<article class="admin-help" aria-labelledby="add-a-slide">
+  <section class="admin-panel admin-panel-body">
+    <h2 id="add-a-slide">How to add a slide to one or more kiosks</h2>
+    <p>Upload the image once, choose every kiosk that should show it, and save. The same slide can appear on several kiosks; you do not need to upload a separate copy for each one.</p>
+    <p>The screenshots below use a demonstration account, sample kiosks, and a sample event. Your kiosk choices depend on your account’s access. Select any screenshot to open a larger version.</p>
+    <ul class="admin-help-list">
+      <li><strong>Prepare an image exactly 1920 × 1080 pixels</strong> in landscape orientation. A different size will be rejected; the application does not resize an incorrect upload for you.</li>
+      <li>Have a title and, if needed, a start date and end date ready.</li>
+      <li>If you cannot see <strong>Slides</strong> or <strong>+ Add slide</strong>, ask an administrator to check your slide-management permission and kiosk assignments.</li>
+    </ul>
+  </section>
+
+  <section class="admin-panel admin-panel-body" aria-labelledby="changed-from-rails-admin">
+    <h2 id="changed-from-rails-admin">Coming from the old RailsAdmin interface?</h2>
+    <div class="admin-table-scroll">
+      <table class="admin-table">
+        <thead><tr><th scope="col">Task</th><th scope="col">Previously in RailsAdmin</th><th scope="col">Now</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Start a slide</th><td>Open Slides in the Content navigation and use the generic new-record action.</td><td>Open <strong>Slides</strong> in the sidebar and select <strong>+ Add slide</strong>. The overview has the same shortcut.</td></tr>
+          <tr><th scope="row">Choose kiosks</th><td>Move kiosks between the available and selected lists with the Add/Remove arrows.</td><td>Check each destination in <strong>Where it appears → Assign to kiosks</strong>. A checked box means that kiosk is selected. There are no transfer arrows.</td></tr>
+          <tr><th scope="row">Save</th><td>Choose between Save, Save and add another, or Save and edit.</td><td>Use <strong>Save slide</strong>. A successful save opens the slide’s detail page, where you can review it or choose <strong>Edit slide</strong>.</td></tr>
+          <tr><th scope="row">Check assignments</th><td>Read the Assigned Kiosks field in the slide list.</td><td>The list shows an assignment count. Open the <strong>slide title</strong> to see the actual names under <strong>Assigned kiosks</strong>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-4">The image-size requirement, title and duration defaults, and date rules are unchanged. Multiple-kiosk assignment was supported before and is still supported; the selection controls have changed.</p>
+  </section>
+
+  <ol class="admin-help-steps" aria-label="Steps to add a slide">
+    <li class="admin-panel admin-panel-body">
+      <h3>1. Open Slides and choose + Add slide</h3>
+      <p>Select <strong>Slides</strong> in the left sidebar, then select <strong>+ Add slide</strong> at the top right. On a narrow screen, open <strong>Navigation</strong> first. You can also start with <strong>+ Add slide</strong> on the overview.</p>
+      <p>The checkboxes beside existing slides in the list are for bulk actions such as exports. They do <strong>not</strong> assign slides to kiosks.</p>
+      <figure>
+        <%= link_to image_path("help/slide-list.png"), target: "_blank", rel: "noopener" do %>
+          <%= image_tag "help/slide-list.png", alt: "Slides list with the + Add slide button above the existing sample slide.", width: 1184, height: 589, loading: "lazy" %>
+        <% end %>
+        <figcaption>The Slides page is your starting point. Open a title to review an existing slide, or choose + Add slide to upload a new one.</figcaption>
+      </figure>
+    </li>
+
+    <li class="admin-panel admin-panel-body">
+      <h3>2. Upload the image and set its details</h3>
+      <p>In the <strong>Slide details</strong> panel, choose your image file and complete the fields:</p>
+      <ul class="admin-help-list">
+        <li><strong>Title:</strong> use a name staff will recognize, such as “Family reading night.” Leave it blank to use the image filename.</li>
+        <li><strong>Image:</strong> choose the 1920 × 1080 image from your computer. The filename appears beside the file chooser. A new upload’s saved preview appears after a successful save.</li>
+        <li><strong>Display time in seconds:</strong> enter how long the image should remain on screen. Leave it blank for 10 seconds. Playback uses a minimum of 3 seconds and a maximum of 10 minutes.</li>
+        <li><strong>Start date:</strong> choose the first day the slide should be eligible to appear. Leaving it blank on a new slide defaults to today.</li>
+        <li><strong>End date:</strong> optionally choose the last day it should appear. That date is included. A blank end date has no scheduled ending; an end date must be on or after the start date.</li>
+      </ul>
+      <p>If you are an administrator, you will also see <strong>Global fallback slide</strong>. Leave it unchecked for an ordinary slide assigned to specific kiosks. A fallback can appear on any kiosk without active assigned slides.</p>
+      <figure>
+        <%= link_to image_path("help/slide-details.png"), target: "_blank", rel: "noopener" do %>
+          <%= image_tag "help/slide-details.png", alt: "Add slide form with a sample image filename, title, display duration, and dates in the Slide details panel.", width: 1089, height: 662, loading: "lazy" %>
+        <% end %>
+        <figcaption>The new form separates the image and schedule from the destination choices. The example is a regular slide, so no global fallback is selected.</figcaption>
+      </figure>
+    </li>
+
+    <li class="admin-panel admin-panel-body">
+      <h3>3. Check every kiosk that should show the slide</h3>
+      <p>In <strong>Where it appears</strong>, find <strong>Assign to kiosks</strong>. Check one kiosk for a single destination, or check several to share the same slide. In this example, both <strong>Sample Library · Children’s room</strong> and <strong>Sample Library · Lobby</strong> are selected.</p>
+      <p>Type part of a kiosk’s name into <strong>Filter choices…</strong> to shorten the list. Check the matching kiosk, then clear or change the filter to find another. Filtering only hides choices; it does not clear boxes you already checked. Clear the filter before saving to review all your selections.</p>
+      <div class="admin-help-note"><strong>This replaces the old two-list picker.</strong> You no longer move entries to a second list with an arrow. Checked boxes are your selected destinations. Selecting a kiosk does not automatically select the other kiosks in its group.</div>
+      <p>You will only see kiosks your account can access. If a destination is missing after clearing the filter, ask an administrator to check your access. For a regular slide, select at least one kiosk: saving an unassigned slide does not make it appear anywhere.</p>
+      <figure class="max-w-xl">
+        <%= link_to image_path("help/kiosk-assignments.png"), target: "_blank", rel: "noopener" do %>
+          <%= image_tag "help/kiosk-assignments.png", alt: "Assign to kiosks with Children’s room and Lobby checked and Meeting room unchecked.", width: 533, height: 385, loading: "lazy" %>
+        <% end %>
+        <figcaption>Two checked boxes assign this one slide to two kiosks. The unchecked Meeting room will not receive it.</figcaption>
+      </figure>
+    </li>
+
+    <li class="admin-panel admin-panel-body">
+      <h3>4. Save, confirm the assignments, and preview</h3>
+      <p>Select <strong>Save slide</strong> below the form. Look for <strong>Slide saved.</strong> On the detail page, confirm the image, schedule, duration, and every name under <strong>Assigned kiosks</strong>. There is no separate Publish button: the saved assignments and schedule determine where and when the slide is eligible to appear.</p>
+      <p>To check the result, open an assigned kiosk’s link and choose <strong>Open screensaver ↗</strong>. An active slide is part of that kiosk’s rotation; a future-dated slide will wait until its start date. An already-open screensaver refreshes its slide list every 30 minutes, so a successful save may not be visible immediately on the physical screen.</p>
+      <figure>
+        <%= link_to image_path("help/slide-saved.png"), target: "_blank", rel: "noopener" do %>
+          <%= image_tag "help/slide-saved.png", alt: "Saved sample slide with its image preview, Active schedule, 15-second display time, and both assigned kiosk names.", width: 1184, height: 738, loading: "lazy" %>
+        <% end %>
+        <figcaption>The detail page confirms the saved image and the exact destinations. The list’s “2 assigned” count refers to these two kiosks.</figcaption>
+      </figure>
+    </li>
+  </ol>
+
+  <section class="admin-panel admin-panel-body" aria-labelledby="fix-slide-problems">
+    <h2 id="fix-slide-problems">If something needs correcting</h2>
+    <ul class="admin-help-list">
+      <li><strong>The form shows an error:</strong> read “Please check the following,” correct the image size, date, or other field, and choose the image file again before resubmitting. The file chooser cannot retain your upload after a failed submission.</li>
+      <li><strong>You need to change destinations:</strong> open the slide title, choose <strong>Edit slide</strong>, check or uncheck kiosks, and select <strong>Save slide</strong>. Leaving Image empty keeps the saved image. A failed image replacement preserves the original saved image and assignments.</li>
+      <li><strong>The slide says Read only:</strong> shared slides that also serve kiosks outside your access, and global fallback slides, require an administrator to change them. Ask for help instead of uploading another copy to work around the restriction.</li>
+      <li><strong>The slide is saved but not on screen:</strong> check its start and end dates, confirm the intended kiosk under Assigned kiosks, and allow for the screensaver’s refresh interval. If the screensaver preview is correct but the physical screen still differs, ask an administrator to check the kiosk.</li>
+    </ul>
+  </section>
+</article>

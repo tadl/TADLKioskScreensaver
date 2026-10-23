@@ -6,6 +6,7 @@ Rails.application.routes.draw do
 
   namespace :admin do
     root "dashboard#index"
+    get "help", to: "help#show"
     get "diagnostics/:hostname", to: "diagnostics#show", as: :diagnostic,
       constraints: { hostname: /[^\/]+/ }, format: false
     %i[slides kiosks kiosk_groups hosts permissions].each do |resource|
