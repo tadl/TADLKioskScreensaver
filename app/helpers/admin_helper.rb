@@ -6,6 +6,13 @@ module AdminHelper
 
   def admin_resource_title = RESOURCE_TITLES.fetch(controller_name, "Overview")
 
+  def admin_avatar_url(user)
+    uri = URI.parse(user.image_url.to_s)
+    uri.to_s if uri.is_a?(URI::HTTPS) && uri.host.present? && uri.userinfo.nil?
+  rescue URI::InvalidURIError
+    nil
+  end
+
   def admin_accessible_kiosk_ids
     @admin_accessible_kiosk_ids ||= current_user.accessible_kiosk_ids
   end

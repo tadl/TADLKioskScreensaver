@@ -37,15 +37,7 @@
     <div class="admin-workspace">
       <header class="admin-topbar">
         <span class="admin-topbar-label">TADL <span>/</span> Digital signage</span>
-        <div class="admin-account">
-          <span class="admin-avatar">
-            <%= (current_user.name.presence || current_user.email).first.upcase %>
-          </span>
-          <span class="hidden sm:inline">
-            <%= current_user.name.presence || current_user.email %>
-          </span>
-          <%= button_to "Sign out", logout_path, method: :delete, class: "admin-signout" %>
-        </div>
+        <%= render "admin/shared/account_menu" %>
       </header>
       <main id="main-content" class="admin-main">
         <% flash.each do |kind, message| %>

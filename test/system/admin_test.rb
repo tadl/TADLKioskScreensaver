@@ -11,6 +11,44 @@ class AdminTest < ApplicationSystemTestCase
 
   teardown { @image&.close! }
 
+  test "account menu supports keyboard dismissal, outside clicks and sign out" do
+    trigger = find(".admin-account-toggle")
+    assert_no_button "Sign out"
+    trigger.send_keys(:enter)
+    assert_selector ".admin-account[open]"
+    within ".admin-account-panel" do
+      assert_text "admin@example.com"
+      assert_button "Sign out"
+    end
+    page.save_screenshot Rails.root.join("tmp/screenshots/admin-account-menu.png")
+    page.send_keys(:escape)
+    assert_no_selector ".admin-account[open]"
+    assert_equal "admin-account-toggle", page.evaluate_script("document.activeElement.className")
+
+    trigger.click
+    find("h1").click
+    assert_no_selector ".admin-account[open]"
+    trigger.click
+    click_button "Sign out"
+    assert_current_path root_path
+    visit admin_root_path
+    assert_current_path login_path
+  end
+
+  test "a failed Google avatar leaves a usable initials menu button" do
+    avatar_url = "https://lh3.googleusercontent.com/synthetic-avatar.png"
+    page.driver.browser.execute_cdp("Network.setBlockedURLs", urls: [avatar_url])
+    users(:one).update!(image_url: avatar_url)
+    visit admin_root_path
+    assert_selector "img.admin-avatar-image[hidden]", visible: false
+    assert_equal avatar_url, find("img.admin-avatar-image", visible: false)[:src]
+    assert_selector ".admin-avatar", text: "A"
+    find(".admin-account-toggle").click
+    assert_button "Sign out"
+  ensure
+    page.driver.browser.execute_cdp("Network.setBlockedURLs", urls: [])
+  end
+
   test "staff can upload, assign, edit and delete a slide" do
     visit new_admin_slide_path
     fill_in "Title", with: "Local testing campaign"
