@@ -16,6 +16,7 @@
       <p class="font-semibold mt-1"><%= display_name %></p>
       <p class="admin-muted break-all mt-1"><%= current_user.email %></p>
     </div>
+    <%= link_to "Help", admin_help_path, class: "admin-account-link" %>
     <%= button_to "Sign out", logout_path, method: :delete, class: "admin-signout" %>
   </div>
 </details>

@@ -2,7 +2,7 @@
 
 module AdminHelper
   RESOURCE_TITLES = { "slides" => "Slides", "kiosks" => "Kiosks", "kiosk_groups" => "Kiosk groups",
-    "hosts" => "Hosts", "user_permissions" => "Users & access", "permissions" => "Permissions" }.freeze
+    "hosts" => "Hosts", "user_permissions" => "Users & access", "permissions" => "Permissions", "help" => "Help" }.freeze
 
   def admin_resource_title = RESOURCE_TITLES.fetch(controller_name, "Overview")
 
