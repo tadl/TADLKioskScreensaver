@@ -18,7 +18,7 @@
 
 ## Technology Stack
 
-* Ruby 3.4.11, Rails 8.1
+* Ruby 3.4.12, Rails 8.1
 * PostgreSQL
 * Tailwind CSS 4, ERB, Turbo, and Stimulus
 * CanCanCan
@@ -31,7 +31,7 @@
 
 ### Prerequisites
 
-* Ruby 3.4.11
+* Ruby 3.4.12
 * PostgreSQL
 * Bundler 2.6.9
 * ImageMagick (slide image processing and admin thumbnails)
