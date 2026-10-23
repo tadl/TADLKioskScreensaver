@@ -45,6 +45,9 @@ class ScreensaverTest < ApplicationSystemTestCase
 
     page.execute_script("window.testRefreshSlides()")
 
+    # Wait for the new document before querying elements from the refreshed page.
+    assert_title "Kiosk Screensaver", exact: true
+
     assert_selector "#screensaver-image[alt='New Content']"
     assert_no_text "No slides scheduled"
   end
@@ -56,6 +59,8 @@ class ScreensaverTest < ApplicationSystemTestCase
     @kiosk.slides.clear
 
     page.execute_script("window.testRefreshSlides()")
+
+    assert_title "TADL Kiosk Screensaver App", exact: true
 
     assert_text "No slides scheduled"
     assert_no_selector "#screensaver-image"
