@@ -93,6 +93,11 @@ Production deployments must mount `storage/` persistently so uploaded slides sur
 
 ## Contributing
 
+The custom Tailwind admin replacement is planned on
+`codex/tailwind-admin-refactor`. See the [admin refactor plan](docs/admin-refactor-plan.md)
+for the functionality inventory, proposed interface, delivery sequence, and
+verification criteria. RailsAdmin remains the current admin until that work is complete.
+
 Run `bin/rails test` and `bin/rails test:system` before submitting changes.
 The browser tests require Google Chrome and run headlessly. CI also checks
 asset compilation, eager loading, Brakeman, and the Ruby advisory database.
