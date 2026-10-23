@@ -1,0 +1,32 @@
+<% chart = kiosk_usage_chart_payload(sessions, start_date, end_date) %>
+<div class="admin-chart" data-controller="usage-chart" data-usage-chart-labels-value="<%= chart[:labels].to_json %>" data-usage-chart-values-value="<%= chart[:data].to_json %>">
+  <canvas data-usage-chart-target="canvas" role="img" aria-label="Usage sessions by <%= start_date == end_date ? 'hour' : 'day' %>">
+  </canvas>
+</div>
+<details class="mt-2">
+  <summary class="admin-muted cursor-pointer">View chart data as a table</summary>
+  <div class="admin-table-scroll mt-3">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>
+            <%= start_date == end_date ? 'Hour' : 'Date' %>
+          </th>
+          <th>Sessions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% chart[:labels].zip(chart[:data]).each do |label, count| %>
+          <tr>
+            <td>
+              <%= label %>
+            </td>
+            <td>
+              <%= count %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</details>

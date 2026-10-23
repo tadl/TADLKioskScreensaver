@@ -1,0 +1,16 @@
+<% content_for :title, admin_record_label(@record) %>
+<%= link_to "← #{admin_resource_title}", collection_path, class: "admin-back-link" %>
+<div class="admin-page-header">
+  <div>
+    <p class="admin-eyebrow">
+      <%= resource_class.model_name.human %>
+    </p>
+    <h1>
+      <%= admin_record_label(@record) %>
+    </h1>
+  </div>
+  <div class="flex gap-3">
+    <%= link_to "Edit #{resource_class.model_name.human.downcase}", edit_record_path(@record), class: "admin-button admin-button-primary" if can?(:update, @record) %>
+    <%= button_to "Delete", record_path(@record), method: :delete, class: "admin-button admin-button-danger", data: { turbo_confirm: "Delete this #{resource_class.model_name.human.downcase}? This cannot be undone." } if can?(:destroy, @record) %>
+  </div>
+</div>

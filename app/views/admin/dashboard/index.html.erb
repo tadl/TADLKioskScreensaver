@@ -1,0 +1,153 @@
+<div class="admin-page-header admin-overview-header">
+  <div>
+    <h1>Every screen, in sight.</h1>
+    <p class="admin-description">Manage your content and see how your kiosks are being used.</p>
+  </div>
+  <div class="flex gap-3">
+    <%= link_to "Refresh overview", admin_root_path(request.query_parameters), class: "admin-button admin-button-secondary" %>
+    <%= link_to "+ Add slide", new_admin_slide_path, class: "admin-button admin-button-primary" if can?(:create, Slide) %>
+  </div>
+</div>
+<% if @fallback_missing %>
+  <div class="admin-flash admin-flash-warning">
+    <strong>No active fallback slides.</strong> Kiosks without active assigned content will show the empty screen.<% if current_user.admin? %>
+      <%= link_to "Manage fallback slides →", admin_slides_path(fallback: "true"), class: "font-semibold underline" %>
+    <% else %> Ask an administrator to add a fallback.<% end %>
+  </div>
+<% end %>
+<div class="admin-metrics">
+  <article class="admin-metric">
+    <span>Accessible kiosks</span>
+    <strong>
+      <%= @kiosks.count %>
+    </strong>
+    <small>Your content destinations</small>
+  </article>
+  <article class="admin-metric">
+    <span>In use</span>
+    <strong>
+      <%= @statuses.count { |status| status.opac? } %>
+      <i class="admin-dot bg-emerald-500">
+      </i>
+    </strong>
+    <small>Hosts browsing the catalog</small>
+  </article>
+  <article class="admin-metric">
+    <span>Screensaver</span>
+    <strong>
+      <%= @statuses.count { |status| status.screensaver? } %>
+      <i class="admin-dot bg-amber-400">
+      </i>
+    </strong>
+    <small>Hosts showing their slides</small>
+  </article>
+  <article class="admin-metric">
+    <span>Usage sessions</span>
+    <strong>
+      <%= @report.sessions.size %>
+    </strong>
+    <small>For the selected reporting range</small>
+  </article>
+</div>
+<section class="admin-panel admin-overview-panel">
+  <div class="admin-panel-heading">
+    <h2>Live kiosk status</h2>
+    <span class="admin-muted">As of <%= Time.current.strftime('%-I:%M %p') %>
+    </span>
+  </div>
+  <% if @status_groups.empty? %>
+    <div class="admin-empty">
+      <span class="admin-empty-symbol">◇</span>
+      <h3>Waiting for your kiosks</h3>
+      <p>Status appears when a host enters the screensaver or opens the catalog.</p>
+    </div>
+  <% else %>
+    <div class="admin-status-grid">
+      <% @status_groups.each do |kiosk, statuses| %>
+        <article class="admin-status-card">
+          <div class="mb-2">
+            <p class="admin-muted">
+              <%= kiosk.kiosk_group&.name || "No group" %>
+            </p>
+            <h3>
+              <%= kiosk.name %>
+            </h3>
+          </div>
+          <% statuses.each do |status| %>
+            <%= link_to admin_diagnostic_path(hostname: status.host), class: "admin-host-status #{status.opac? ? 'is-active' : 'is-idle'}" do %>
+              <span>
+                <strong>
+                  <%= status.host %>
+                </strong>
+                <small>
+                  <%= status.opac? ? 'In use' : 'Screensaver' %>
+                </small>
+              </span>
+              <span class="text-right">
+                <%= status.state_duration_label %>
+                <small>Details →</small>
+              </span>
+            <% end %>
+          <% end %>
+        </article>
+      <% end %>
+    </div>
+  <% end %>
+</section>
+<section class="admin-panel admin-overview-panel mt-5">
+  <div class="admin-panel-heading">
+    <h2>Kiosk usage</h2>
+  </div>
+  <%= form_with url: admin_root_path, method: :get, class: "admin-report-filters", data: { controller: "report-filter" } do %>
+    <div class="admin-field">
+      <%= label_tag :kiosk_group, "Kiosk group" %>
+      <%= select_tag :kiosk_group, options_from_collection_for_select(@report.groups, :id, :name, @report.selected_group&.id), include_blank: current_user.admin? ? "All kiosks" : "All my kiosks", data: { action: "change->report-filter#apply" } %>
+    </div>
+    <% presets = kiosk_usage_presets; preset = presets.find { |_, range| range == @report.date_range }&.first || "custom" %>
+    <div class="admin-field">
+      <%= label_tag :preset_range, "Date range" %>
+      <%= select_tag :preset_range, options_for_select(presets.map { |key, range| [key.humanize, key, { 'data-start' => range.begin.to_s, 'data-end' => range.end.to_s }] } + [["Custom", "custom"]], preset), data: { action: "change->report-filter#preset" } %>
+    </div>
+    <div class="admin-field">
+      <%= label_tag :start, "Start date" %>
+      <%= date_field_tag :start, @report.date_range.begin, data: { report_filter_target: "start", action: "change->report-filter#custom" } %>
+    </div>
+    <div class="admin-field">
+      <%= label_tag :end, "End date" %>
+      <%= date_field_tag :end, @report.date_range.end, data: { report_filter_target: "end", action: "change->report-filter#custom" } %>
+    </div>
+    <%= submit_tag "Apply", class: "admin-button admin-button-secondary" %>
+  <% end %>
+  <% if @report.sessions.empty? %>
+    <div class="admin-empty">
+      <h3>No usage for this range</h3>
+      <p>Choose another date range or kiosk group to explore your data.</p>
+    </div>
+  <% else %>
+    <div class="admin-report-body">
+      <% @report.grouped.each_with_index do |(group, sessions), index| %>
+        <details class="admin-report-group" <%= 'open' if index.zero? %>>
+          <summary>
+            <span>
+              <%= group&.name || "No group" %>
+            </span>
+            <span class="admin-muted">
+              <%= pluralize(sessions.size, 'session') %>
+            </span>
+          </summary>
+          <div class="admin-report-group-body">
+            <%= render "usage_chart", sessions: sessions, start_date: @report.date_range.begin, end_date: @report.date_range.end %>
+            <% sessions.group_by { |session| session.kiosk&.name || session.kiosk_code }.each do |name, kiosk_sessions| %>
+              <h3 class="mt-4 mb-2">
+                <%= name %>
+                <span class="admin-muted font-normal">· <%= pluralize(kiosk_sessions.size, 'session') %>
+                </span>
+              </h3>
+              <%= render "usage_table", hosts: kiosk_sessions.group_by(&:host), start_date: @report.date_range.begin, end_date: @report.date_range.end, group: group %>
+            <% end %>
+          </div>
+        </details>
+      <% end %>
+    </div>
+  <% end %>
+</section>

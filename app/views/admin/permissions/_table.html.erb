@@ -1,0 +1,22 @@
+<table class="admin-table">
+  <thead>
+    <tr>
+      <%= render "admin/resources/select_all" %>
+      <th>Permission</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% records.each do |permission| %>
+      <tr>
+        <%= render "admin/resources/select_record", record: permission %>
+        <td>
+          <%= link_to permission.name, admin_permission_path(permission), class: "admin-record-link" %>
+        </td>
+        <td>
+          <%= permission.description %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

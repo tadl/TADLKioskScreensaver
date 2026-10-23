@@ -13,7 +13,7 @@ class UserPermission < ApplicationRecord
   after_destroy :sync_admin_flag_on_user
   before_destroy :destruction_allowed_for_current_user
 
-  def rails_admin_label
+  def display_label
     user.email.split('@').first
   end
 

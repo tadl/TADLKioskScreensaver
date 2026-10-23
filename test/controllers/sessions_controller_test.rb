@@ -23,7 +23,7 @@ class SessionsControllerCallbackTest < ActionController::TestCase
 
       get :create, params: { provider: "google_oauth2" }
 
-      assert_redirected_to "/admin/"
+      assert_redirected_to admin_root_path
       assert_equal users(:one).id, session[:user_id]
       assert_predicate users(:one).reload, :admin?
     end

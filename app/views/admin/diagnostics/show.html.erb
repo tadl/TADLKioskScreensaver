@@ -1,0 +1,76 @@
+<% content_for :title, "Host details · #{@host}" %>
+<%= link_to "← Overview", admin_root_path, class: "admin-back-link" %>
+<div class="admin-page-header">
+  <div>
+    <p class="admin-eyebrow">Host diagnostics</p>
+    <h1>
+      <%= @host %>
+    </h1>
+    <p class="admin-description">Heartbeat, browser health, and the latest recorded events.</p>
+  </div>
+  <%= link_to "Refresh", admin_diagnostic_path(hostname: @host), class: "admin-button admin-button-secondary" %>
+</div>
+<section class="admin-panel admin-panel-body">
+  <h2>Heartbeat</h2>
+  <% if @details[:heartbeat] %>
+    <dl class="admin-details">
+      <% @details[:heartbeat].each do |key, value| %>
+        <dt>
+          <%= key.to_s.humanize %>
+        </dt>
+        <dd>
+          <%= diagnostic_value(key, value) %>
+        </dd>
+      <% end %>
+    </dl>
+  <% else %>
+    <p class="admin-muted">No heartbeat recorded for this host yet.</p>
+  <% end %>
+</section>
+<section class="admin-panel mt-6">
+  <div class="admin-panel-heading">
+    <h2>Recent logs</h2>
+    <span class="admin-muted">Latest <%= @details[:logs].size %> events</span>
+  </div>
+  <% if @details[:logs].empty? %>
+    <div class="admin-panel-body admin-muted">No logs recorded for this host yet.</div>
+  <% end %>
+  <% @details[:logs].each do |log| %>
+    <article class="admin-log-entry">
+      <div class="flex flex-wrap justify-between gap-3">
+        <div>
+          <%= admin_badge(log[:level].presence || "log", %w[error fatal].include?(log[:level]) ? 'danger' : %w[warn warning].include?(log[:level]) ? 'warning' : 'neutral') %>
+          <span class="admin-muted">
+            <%= log[:kind] %>
+          </span>
+        </div>
+        <time class="admin-muted">
+          <%= log[:occurred_at] %>
+        </time>
+      </div>
+      <p class="mt-3 whitespace-pre-wrap break-words">
+        <%= log[:message] %>
+      </p>
+      <dl class="admin-details mt-3">
+        <% log.except(:message, :stack, :level, :kind, :occurred_at).each do |key, value| %>
+          <% if value.present? %>
+            <dt>
+              <%= key.to_s.humanize %>
+            </dt>
+            <dd>
+              <%= diagnostic_value(key, value) %>
+            </dd>
+          <% end %>
+        <% end %>
+      </dl>
+      <% if log[:stack].present? %>
+        <details class="mt-3">
+          <summary class="admin-text-link">Stack trace</summary>
+          <pre class="admin-stack">
+            <%= log[:stack] %>
+          </pre>
+        </details>
+      <% end %>
+    </article>
+  <% end %>
+</section>

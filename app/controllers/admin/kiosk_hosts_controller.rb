@@ -3,16 +3,19 @@
 class Admin::KioskHostsController < ApplicationController
   before_action :require_login!
   before_action :authorize_kiosk_host!
+  before_action { response.headers["Cache-Control"] = "no-store" }
 
   # GET /admin/kiosk_hosts/:host.json
   def show
-    host = params[:host].to_s.strip
+    host = requested_host
     return render json: { ok: false, error: "missing host" }, status: :bad_request if host.blank?
 
     render json: Admin::KioskHostDetails.new(host)
   end
 
   private
+
+  def requested_host = params[:host].to_s.strip
 
   def require_login!
     head :unauthorized unless current_user
@@ -23,7 +26,7 @@ class Admin::KioskHostsController < ApplicationController
   def authorize_kiosk_host!
     return if current_user&.admin?
 
-    host = params[:host].to_s.strip
+    host = requested_host
     return head :bad_request if host.blank?
 
     # We *do not* assume Host <-> Kiosk relationships.

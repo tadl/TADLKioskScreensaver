@@ -1,0 +1,21 @@
+<%= render "admin/resources/detail_header" %>
+<section class="admin-panel admin-panel-body">
+  <dl class="admin-details">
+    <dt>Slug</dt>
+    <dd>
+      <%= @record.slug %>
+    </dd>
+    <dt>Location shortname</dt>
+    <dd>
+      <%= @record.location_shortname.presence || "—" %>
+    </dd>
+  </dl>
+  <h2 class="mt-6">Kiosks in this group</h2>
+  <ul class="admin-link-list">
+    <% current_user.accessible_kiosks.where(kiosk_group: @record).order(:name).each do |kiosk| %>
+      <li>
+        <%= can?(:read, kiosk) ? link_to(kiosk.name, admin_kiosk_path(kiosk)) : kiosk.name %>
+      </li>
+    <% end %>
+  </ul>
+</section>

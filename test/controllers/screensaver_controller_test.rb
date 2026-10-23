@@ -1,6 +1,20 @@
 require "test_helper"
 
 class ScreensaverControllerTest < ActionDispatch::IntegrationTest
+  test "home redirects without resetting usage or state" do
+    kiosk = kiosks(:one)
+    status = KioskStatus.mark!(kiosk: kiosk, host: "home-test-host", state: :opac)
+    usage = KioskSession.create!(kiosk_code: kiosk.slug, host: "home-test-host", started_at: 10.minutes.ago)
+    changed_at = status.state_changed_at
+
+    assert_no_difference "KioskSession.count" do
+      get home_screensaver_path, params: { kiosk: kiosk.slug, host: "home-test-host" }
+    end
+    assert_redirected_to kiosk.catalog_url
+    assert_nil usage.reload.ended_at
+    assert_equal changed_at, status.reload.state_changed_at
+  end
+
   test "root without kiosk renders landing page" do
     get root_url
 

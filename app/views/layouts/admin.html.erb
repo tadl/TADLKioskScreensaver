@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+      <%= content_for?(:title) ? yield(:title) : admin_resource_title %> · Kiosk Screensaver</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="turbo-cache-control" content="no-cache">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= favicon_link_tag "tadl-icon.png", type: "image/png" %>
+    <%= favicon_link_tag "tadl-icon-dark.png", type: "image/png", media: "(prefers-color-scheme: dark)" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="admin-app">
+    <a href="#main-content" class="admin-skip-link">Skip to content</a>
+    <aside class="admin-sidebar">
+      <%= link_to admin_root_path, class: "admin-brand" do %>
+        <%= image_tag "tadl-icon-dark.png", alt: "", width: 44, height: 44, class: "admin-brand-mark" %>
+        <span>Kiosk Screensaver<small>Traverse Area District Library</small>
+        </span>
+      <% end %>
+      <nav aria-label="Main navigation" class="hidden md:block">
+        <%= render "admin/shared/navigation" %>
+      </nav>
+      <details class="md:hidden admin-mobile-nav">
+        <summary>Navigation</summary>
+        <nav aria-label="Mobile navigation">
+          <%= render "admin/shared/navigation" %>
+        </nav>
+      </details>
+      <div class="admin-sidebar-footer">
+        <%= image_tag "mascot-kio.png", alt: "", width: 52, height: 52 %>
+        <div>A little more life<br>on every screen.</div>
+      </div>
+    </aside>
+    <div class="admin-workspace">
+      <header class="admin-topbar">
+        <span class="admin-topbar-label">TADL <span>/</span> Digital signage</span>
+        <%= render "admin/shared/account_menu" %>
+      </header>
+      <main id="main-content" class="admin-main">
+        <% flash.each do |kind, message| %>
+          <div class="admin-flash <%= kind.to_s == 'alert' ? 'admin-flash-alert' : 'admin-flash-notice' %>" role="<%= kind.to_s == 'alert' ? 'alert' : 'status' %>">
+            <%= message %>
+          </div>
+        <% end %>
+        <%= yield %>
+      </main>
+      <footer class="admin-footer">TADL Kiosk Screensaver <span>Made for the spaces we share.</span>
+      </footer>
+    </div>
+  </body>
+</html>

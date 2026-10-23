@@ -1,0 +1,10 @@
+<% content_for :title, "Add #{resource_class.model_name.human.downcase}" %>
+<%= link_to "← #{admin_resource_title}", collection_path, class: "admin-back-link" %>
+<div class="admin-page-header">
+  <div>
+    <p class="admin-eyebrow">Create something new</p>
+    <h1>Add <%= resource_class.model_name.human.downcase %>
+    </h1>
+  </div>
+</div>
+<%= render "admin/resources/form" %>

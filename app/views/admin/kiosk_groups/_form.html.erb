@@ -1,0 +1,22 @@
+<div class="admin-form-grid">
+  <section class="admin-panel admin-panel-body">
+    <h2>Group details</h2>
+    <div class="admin-field">
+      <%= f.label :name %>
+      <%= f.text_field :name, required: true %>
+    </div>
+    <div class="admin-field">
+      <%= f.label :slug %>
+      <%= f.text_field :slug, required: true %>
+    </div>
+    <div class="admin-field">
+      <%= f.label :location_shortname %>
+      <%= f.text_field :location_shortname %>
+      <p class="admin-field-hint">The location feed shortname used to calculate utilization from opening hours.</p>
+    </div>
+  </section>
+  <section class="admin-panel admin-panel-body">
+    <h2>Group membership</h2>
+    <%= render "admin/shared/assignments", f: f, association: :kiosk_ids, choices: @kiosks, label: "Kiosks", hint: "A kiosk belongs to one group. Selecting it here moves it from its previous group." %>
+  </section>
+</div>

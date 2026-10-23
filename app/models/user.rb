@@ -18,11 +18,6 @@ class User < ApplicationRecord
     end
   end
 
-  # RailsAdmin will use this (and your avatar_url fallback)
-  def avatar_url
-    image_url.presence || GravatarBuilder.new(email).url
-  end
-
   def full_name
     name
   end

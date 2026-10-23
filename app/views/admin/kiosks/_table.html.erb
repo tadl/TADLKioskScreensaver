@@ -1,0 +1,37 @@
+<table class="admin-table">
+  <thead>
+    <tr>
+      <%= render "admin/resources/select_all" %>
+      <th>Kiosk</th>
+      <th>Group</th>
+      <th>Location</th>
+      <th>Slides</th>
+      <th>Preview</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% records.each do |kiosk| %>
+      <tr>
+        <%= render "admin/resources/select_record", record: kiosk %>
+        <td>
+          <%= link_to kiosk.name, admin_kiosk_path(kiosk), class: "admin-record-link" %>
+          <p class="admin-muted">
+            <%= kiosk.slug %>
+          </p>
+        </td>
+        <td>
+          <%= kiosk.kiosk_group&.name || "No group" %>
+        </td>
+        <td>
+          <%= kiosk.location.presence || "—" %>
+        </td>
+        <td>
+          <%= kiosk.slides.size %>
+        </td>
+        <td>
+          <%= link_to "Open screensaver ↗", root_path(kiosk: kiosk.slug), target: "_blank", rel: "noopener", data: { turbo: false }, class: "admin-text-link" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

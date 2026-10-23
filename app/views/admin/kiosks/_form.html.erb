@@ -1,0 +1,31 @@
+<% manage_identity = current_user.admin? || current_user.can?('manage_kiosks') %>
+<div class="admin-form-grid">
+  <section class="admin-panel admin-panel-body">
+    <h2>Kiosk details</h2>
+    <div class="admin-field">
+      <%= f.label :name %>
+      <%= f.text_field :name, required: true, disabled: !manage_identity %>
+    </div>
+    <div class="admin-field">
+      <%= f.label :slug %>
+      <%= f.text_field :slug, required: true, disabled: @record.persisted? && !current_user.admin? %>
+      <p class="admin-field-hint">Used in kiosk URLs. Changing it can disconnect historical usage from this kiosk.</p>
+    </div>
+    <div class="admin-field">
+      <%= f.label :catalog_url, "Catalog URL" %>
+      <%= f.url_field :catalog_url, required: true, disabled: !manage_identity %>
+    </div>
+    <div class="admin-field">
+      <%= f.label :location %>
+      <%= f.text_field :location, disabled: !manage_identity %>
+    </div>
+    <div class="admin-field">
+      <%= f.label :kiosk_group_id, "Kiosk group" %>
+      <%= f.collection_select :kiosk_group_id, @groups, :id, :name, { include_blank: "No group" }, disabled: !(manage_identity || current_user.can?('manage_kioskgroups')) %>
+    </div>
+  </section>
+  <section class="admin-panel admin-panel-body">
+    <h2>Assigned content</h2>
+    <%= render "admin/shared/assignments", f: f, association: :slide_ids, choices: @slides, label: "Slides", hint: "Only accessible slides with a 1920 × 1080 image are listed. Other existing assignments are preserved." %>
+  </section>
+</div>

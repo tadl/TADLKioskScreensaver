@@ -1,0 +1,24 @@
+<fieldset class="admin-field" data-controller="assignment">
+  <legend>
+    <%= label %>
+  </legend>
+  <p class="admin-field-hint">
+    <%= hint %>
+  </p>
+  <label class="sr-only" for="filter-<%= association %>">Filter <%= label.downcase %>
+  </label>
+  <input id="filter-<%= association %>" type="search" placeholder="Filter choices…" class="admin-input mb-3" data-action="input->assignment#filter">
+  <div class="admin-assignment-list">
+    <%= f.collection_check_boxes association, choices, :id, :to_s do |b| %>
+      <%= b.label class: "admin-assignment-option", data: { assignment_target: "option", label: admin_record_label(b.object).downcase } do %>
+        <%= b.check_box %>
+        <span>
+          <%= admin_record_label(b.object) %>
+        </span>
+      <% end %>
+    <% end %>
+    <% if choices.empty? %>
+      <p class="admin-muted p-3">No choices available.</p>
+    <% end %>
+  </div>
+</fieldset>

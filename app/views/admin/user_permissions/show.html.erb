@@ -1,0 +1,25 @@
+<%= render "admin/resources/detail_header" %>
+<section class="admin-panel admin-panel-body">
+  <dl class="admin-details">
+    <dt>Staff member</dt>
+    <dd>
+      <%= @record.user.name %>
+    </dd>
+    <dt>Email</dt>
+    <dd>
+      <%= @record.user.email %>
+    </dd>
+    <dt>Permission</dt>
+    <dd>
+      <%= @record.permission.name %>
+    </dd>
+    <dt>Kiosk groups</dt>
+    <dd>
+      <%= @record.kiosk_groups.order(:name).map(&:name).join(', ').presence || "None" %>
+    </dd>
+    <dt>Individual kiosks</dt>
+    <dd>
+      <%= @record.kiosks.order(:name).map(&:name).join(', ').presence || "None" %>
+    </dd>
+  </dl>
+</section>

@@ -1,0 +1,1 @@
+<%= select_tag :kiosk_group_id, options_from_collection_for_select(KioskGroup.where(id: current_user.accessible_kiosk_group_ids).order(:name), :id, :name, params[:kiosk_group_id]), include_blank: "All groups", class: "admin-input", aria: { label: "Kiosk group" } %>

@@ -8,9 +8,10 @@ class SessionsController < ApplicationController
 
     user = User.from_omniauth(auth)
     if user
+      reset_session
       session[:user_id] = user.id
       flash.discard
-      redirect_to rails_admin.dashboard_path
+      redirect_to admin_root_path
     else
       reset_session
       redirect_to root_path, alert: "Only #{GOOGLE_DOMAIN} accounts allowed"

@@ -1,0 +1,33 @@
+<table class="admin-table">
+  <thead>
+    <tr>
+      <%= render "admin/resources/select_all" %>
+      <th>Staff member</th>
+      <th>Permission</th>
+      <th>Groups</th>
+      <th>Individual kiosks</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% records.each do |role| %>
+      <tr>
+        <%= render "admin/resources/select_record", record: role %>
+        <td>
+          <%= link_to role.user.name.presence || role.user.email, admin_user_permission_path(role), class: "admin-record-link" %>
+          <p class="admin-muted">
+            <%= role.user.email %>
+          </p>
+        </td>
+        <td>
+          <%= admin_badge(role.permission.name, role.permission.name == 'admin' ? 'warning' : 'neutral') %>
+        </td>
+        <td>
+          <%= role.kiosk_groups.map(&:name).join(', ').presence || "—" %>
+        </td>
+        <td>
+          <%= role.kiosks.map(&:name).join(', ').presence || "—" %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

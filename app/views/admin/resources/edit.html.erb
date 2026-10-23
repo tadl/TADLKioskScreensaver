@@ -1,0 +1,12 @@
+<% content_for :title, "Edit #{admin_record_label(@record)}" %>
+<%= link_to "← #{admin_resource_title}", collection_path, class: "admin-back-link" %>
+<div class="admin-page-header">
+  <div>
+    <p class="admin-eyebrow">Edit <%= resource_class.model_name.human.downcase %>
+    </p>
+    <h1>
+      <%= admin_record_label(@record) %>
+    </h1>
+  </div>
+</div>
+<%= render "admin/resources/form" %>

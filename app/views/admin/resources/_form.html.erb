@@ -1,0 +1,22 @@
+<%= form_with model: [:admin, @record], class: "admin-record-form", data: { turbo: false } do |f| %>
+  <% if @record.errors.any? %>
+    <div class="admin-form-errors" role="alert" tabindex="-1">
+      <h2>Please check the following</h2>
+      <ul>
+        <% @record.errors.full_messages.each do |message| %>
+          <li>
+            <%= message %>
+          </li>
+        <% end %>
+      </ul>
+      <% if @record.is_a?(Slide) %>
+        <p>Please choose the image again before resubmitting.</p>
+      <% end %>
+    </div>
+  <% end %>
+  <%= render "#{controller_path}/form", f: f %>
+  <div class="admin-form-actions">
+    <%= f.submit "Save #{resource_class.model_name.human.downcase}", class: "admin-button admin-button-primary" %>
+    <%= link_to "Cancel", @record.persisted? ? record_path(@record) : collection_path, class: "admin-button admin-button-secondary" %>
+  </div>
+<% end %>

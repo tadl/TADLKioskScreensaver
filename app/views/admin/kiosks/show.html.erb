@@ -1,0 +1,34 @@
+<%= render "admin/resources/detail_header" %>
+<section class="admin-panel admin-panel-body">
+  <dl class="admin-details">
+    <dt>Slug</dt>
+    <dd>
+      <%= @record.slug %>
+    </dd>
+    <dt>Group</dt>
+    <dd>
+      <%= @record.kiosk_group&.name || "No group" %>
+    </dd>
+    <dt>Location</dt>
+    <dd>
+      <%= @record.location.presence || "—" %>
+    </dd>
+    <dt>Catalog URL</dt>
+    <dd>
+      <%= @record.catalog_url %>
+    </dd>
+  </dl>
+  <%= link_to "Open screensaver ↗", root_path(kiosk: @record.slug), target: "_blank", rel: "noopener", data: { turbo: false }, class: "admin-button admin-button-secondary mt-5" %>
+</section>
+<section class="mt-6">
+  <h2 class="admin-section-title">Assigned slides</h2>
+  <div class="admin-preview-grid">
+    <% @record.slides.accessible_by(current_ability, :read).with_attached_image.order(:title).each do |slide| %>
+      <article class="admin-panel admin-panel-body">
+        <%= admin_thumbnail(slide, size: 320) %>
+        <%= link_to slide.title, admin_slide_path(slide), class: "admin-record-link block mt-3" %>
+        <%= slide_schedule(slide) %>
+      </article>
+    <% end %>
+  </div>
+</section>

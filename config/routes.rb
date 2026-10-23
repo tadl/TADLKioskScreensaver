@@ -5,6 +5,23 @@ Rails.application.routes.draw do
   match '/auth/failure', to: 'sessions#failure', via: [:get, :post]
 
   namespace :admin do
+    root "dashboard#index"
+    get "diagnostics/:hostname", to: "diagnostics#show", as: :diagnostic,
+      constraints: { hostname: /[^\/]+/ }, format: false
+    %i[slides kiosks kiosk_groups hosts permissions].each do |resource|
+      resources resource, constraints: { id: /\d+/ } do
+        collection do
+          get :export
+          post :bulk
+        end
+      end
+    end
+    resources :user_permissions, except: %i[new create], constraints: { id: /\d+/ } do
+      collection do
+        get :export
+        post :bulk
+      end
+    end
     get "kiosk_hosts/:host.json",
         to: "kiosk_hosts#show",
         defaults: { format: :json },
@@ -15,9 +32,15 @@ Rails.application.routes.draw do
         defaults: { format: :json },
         format: false,
         constraints: { host: /[^\/]+/ }
-  end
 
-  mount RailsAdmin::Engine => '/admin', as: 'rails_admin'
+    # Preserve useful read-only bookmarks from the former admin engine.
+    constraints model_name: /slide|kiosk|kiosk_group|host|permission|user_permission/ do
+      get ":model_name", to: "legacy#show"
+      get ":model_name/new", to: "legacy#show", defaults: { legacy_action: "new" }
+      get ":model_name/:id/edit", to: "legacy#show", defaults: { legacy_action: "edit" }
+      get ":model_name/:id", to: "legacy#show", defaults: { legacy_action: "show" }
+    end
+  end
 
   get "up" => "rails/health#show", as: :rails_health_check
 
