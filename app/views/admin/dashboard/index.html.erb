@@ -1,6 +1,5 @@
-<div class="admin-page-header">
+<div class="admin-page-header admin-overview-header">
   <div>
-    <p class="admin-eyebrow">A view across your spaces</p>
     <h1>Every screen, in sight.</h1>
     <p class="admin-description">Manage your content and see how your kiosks are being used.</p>
   </div>
@@ -50,12 +49,9 @@
     <small>For the selected reporting range</small>
   </article>
 </div>
-<section class="admin-panel">
+<section class="admin-panel admin-overview-panel">
   <div class="admin-panel-heading">
-    <div>
-      <p class="admin-eyebrow">Right now</p>
-      <h2>Live kiosk status</h2>
-    </div>
+    <h2>Live kiosk status</h2>
     <span class="admin-muted">As of <%= Time.current.strftime('%-I:%M %p') %>
     </span>
   </div>
@@ -69,7 +65,7 @@
     <div class="admin-status-grid">
       <% @status_groups.each do |kiosk, statuses| %>
         <article class="admin-status-card">
-          <div class="mb-4">
+          <div class="mb-2">
             <p class="admin-muted">
               <%= kiosk.kiosk_group&.name || "No group" %>
             </p>
@@ -98,12 +94,9 @@
     </div>
   <% end %>
 </section>
-<section class="admin-panel mt-7">
+<section class="admin-panel admin-overview-panel mt-5">
   <div class="admin-panel-heading">
-    <div>
-      <p class="admin-eyebrow">How your spaces are used</p>
-      <h2>Kiosk usage</h2>
-    </div>
+    <h2>Kiosk usage</h2>
   </div>
   <%= form_with url: admin_root_path, method: :get, class: "admin-report-filters", data: { controller: "report-filter" } do %>
     <div class="admin-field">
@@ -145,7 +138,7 @@
           <div class="admin-report-group-body">
             <%= render "usage_chart", sessions: sessions, start_date: @report.date_range.begin, end_date: @report.date_range.end %>
             <% sessions.group_by { |session| session.kiosk&.name || session.kiosk_code }.each do |name, kiosk_sessions| %>
-              <h3 class="mt-6 mb-3">
+              <h3 class="mt-4 mb-2">
                 <%= name %>
                 <span class="admin-muted font-normal">· <%= pluralize(kiosk_sessions.size, 'session') %>
                 </span>

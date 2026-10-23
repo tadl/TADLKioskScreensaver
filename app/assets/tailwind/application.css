@@ -49,6 +49,9 @@
   .admin-page-header h1 { @apply text-3xl font-semibold tracking-tight text-tadl-900 sm:text-4xl; overflow-wrap: anywhere; }
   .admin-eyebrow { @apply mb-2 text-[10px] font-bold uppercase tracking-[0.17em] text-tadl-700; }
   .admin-description { @apply mt-3 max-w-2xl text-sm leading-relaxed text-slate-500; }
+  .admin-overview-header { @apply mb-5 gap-3; }
+  .admin-overview-header h1 { @apply text-2xl sm:text-3xl; }
+  .admin-overview-header .admin-description { @apply mt-1; }
   .admin-button { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition-colors; }
   .admin-button-primary { @apply border border-tadl-600 bg-tadl-600 text-white shadow-sm hover:bg-tadl-700; }
   .admin-button-secondary { @apply border border-slate-200 bg-white text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50; }
@@ -63,11 +66,14 @@
   .admin-panel-body h2, .admin-panel-heading h2, .admin-section-title { @apply mb-4 text-base font-semibold tracking-tight text-tadl-900; }
   .admin-panel-heading { @apply flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-5 lg:px-7; }
   .admin-panel-heading h2 { @apply mb-0; }
-  .admin-metrics { @apply mb-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4; }
-  .admin-metric { @apply rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs; }
+  .admin-overview-panel > .admin-panel-heading { @apply px-4 py-3 lg:px-5; }
+  .admin-overview-panel > .admin-empty { @apply py-8; }
+  .admin-overview-panel .admin-empty-symbol { @apply mb-2 text-3xl; }
+  .admin-metrics { @apply mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4; }
+  .admin-metric { @apply rounded-xl border border-slate-200/90 bg-white p-4 shadow-xs; }
   .admin-metric > span { @apply block text-xs font-medium text-slate-500; }
-  .admin-metric strong { @apply mt-3 mb-2 flex items-center gap-3 text-4xl font-semibold tracking-tight text-tadl-900; }
-  .admin-metric small { @apply text-[11px] text-slate-500; }
+  .admin-metric strong { @apply my-1 flex items-center gap-2 text-3xl font-semibold tracking-tight text-tadl-900; }
+  .admin-metric small { @apply block text-[11px] leading-snug text-slate-500; }
   .admin-dot { @apply inline-block size-2 rounded-full; }
   .admin-toolbar { @apply flex flex-wrap items-start justify-between gap-4 p-5; }
   .admin-filter-form { @apply flex min-w-0 flex-wrap items-center gap-2; }
@@ -89,7 +95,7 @@
   .admin-table tbody tr:hover { @apply bg-slate-50/70; }
   .admin-table .admin-select-cell { @apply w-10 pr-0; }
   .admin-slide-cell { @apply flex min-w-64 items-center gap-4; }
-  .admin-thumbnail { @apply block shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-50; }
+  .admin-thumbnail { @apply block aspect-video shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-50; }
   .admin-slide-cell .admin-thumbnail, .admin-image-placeholder { @apply flex h-16 w-28 items-center justify-center text-xs text-slate-400; }
   .admin-thumbnail img { @apply block h-auto w-full object-contain; }
   .admin-slide-cell .admin-thumbnail img { @apply h-full object-cover; }
@@ -131,24 +137,25 @@
   .admin-link-list { @apply space-y-3 text-sm text-tadl-800; }
   .admin-link-list a { @apply hover:underline; }
   .admin-preview-grid { @apply grid gap-5 sm:grid-cols-2 xl:grid-cols-3; }
-  .admin-status-grid { @apply grid gap-4 p-5 lg:grid-cols-2 2xl:grid-cols-3; }
-  .admin-status-card { @apply min-w-0 rounded-lg border border-slate-200 p-4; }
+  .admin-status-grid { @apply grid gap-3 p-4 lg:grid-cols-2 2xl:grid-cols-3; }
+  .admin-status-card { @apply min-w-0 rounded-lg border border-slate-200 p-3; }
   .admin-status-card h3 { @apply font-semibold text-tadl-900; }
-  .admin-host-status { @apply mt-2 flex items-center justify-between gap-3 rounded-lg border px-3 py-3 text-xs transition-colors; }
+  .admin-host-status { @apply mt-2 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs transition-colors; }
   .admin-host-status.is-active { @apply border-emerald-100 bg-emerald-50 text-emerald-900 hover:bg-emerald-100; }
   .admin-host-status.is-idle { @apply border-amber-100 bg-amber-50/70 text-amber-900 hover:bg-amber-100; }
   .admin-host-status strong { @apply break-all; }
   .admin-host-status small { @apply mt-1 block text-[10px] opacity-80; }
-  .admin-report-filters { @apply flex flex-wrap items-end gap-3 border-b border-slate-100 p-5; }
+  .admin-report-filters { @apply flex flex-wrap items-end gap-3 border-b border-slate-100 px-4 py-3; }
   .admin-report-filters .admin-field { @apply mb-0; }
-  .admin-report-body { @apply p-5; }
+  .admin-report-body { @apply p-4; }
   .admin-report-group { @apply mb-3 overflow-hidden rounded-lg border border-slate-200 last:mb-0; }
-  .admin-report-group > summary { @apply flex list-none flex-wrap items-center justify-between gap-3 bg-slate-50 px-5 py-4 text-sm font-semibold text-tadl-900; }
+  .admin-report-group > summary { @apply flex list-none flex-wrap items-center justify-between gap-3 bg-slate-50 px-4 py-3 text-sm font-semibold text-tadl-900; }
   .admin-report-group > summary::before { content: "+"; @apply mr-2; }
   .admin-report-group[open] > summary::before { content: "−"; }
   .admin-report-group > summary > span:first-of-type { @apply mr-auto; }
-  .admin-report-group-body { @apply p-4 lg:p-5; }
-  .admin-chart { @apply relative h-56 w-full; }
+  .admin-report-group-body { @apply p-4; }
+  .admin-report-group-body .admin-table td { @apply py-3; }
+  .admin-chart { @apply relative h-48 w-full; }
   .admin-log-entry { @apply border-b border-slate-100 p-5 last:border-0; }
   .admin-stack { @apply mt-3 max-h-96 overflow-auto rounded-lg bg-slate-50 p-4 text-xs whitespace-pre-wrap; overflow-wrap: anywhere; }
   .admin-login { @apply flex min-h-screen items-center justify-center p-5; }
