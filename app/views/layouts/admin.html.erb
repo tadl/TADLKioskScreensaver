@@ -7,6 +7,8 @@
     <meta name="turbo-cache-control" content="no-cache">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= favicon_link_tag "tadl-icon.png", type: "image/png" %>
+    <%= favicon_link_tag "tadl-icon-dark.png", type: "image/png", media: "(prefers-color-scheme: dark)" %>
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
@@ -14,8 +16,7 @@
     <a href="#main-content" class="admin-skip-link">Skip to content</a>
     <aside class="admin-sidebar">
       <%= link_to admin_root_path, class: "admin-brand" do %>
-        <span class="admin-brand-mark">K<span>•</span>
-        </span>
+        <%= image_tag "tadl-icon-dark.png", alt: "", width: 44, height: 44, class: "admin-brand-mark" %>
         <span>Kiosk Screensaver<small>Traverse Area District Library</small>
         </span>
       <% end %>

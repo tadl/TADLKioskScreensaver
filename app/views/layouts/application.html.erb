@@ -6,6 +6,8 @@
     <meta http-equiv="Cache-Control" content="no-store">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <%= favicon_link_tag "tadl-icon.png", type: "image/png" %>
+    <%= favicon_link_tag "tadl-icon-dark.png", type: "image/png", media: "(prefers-color-scheme: dark)" %>
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
