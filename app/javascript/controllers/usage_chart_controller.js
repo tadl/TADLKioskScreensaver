@@ -1,5 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
-import "chart"
+import "chart.js"
 
 export default class extends Controller {
   static targets = ["canvas"]
