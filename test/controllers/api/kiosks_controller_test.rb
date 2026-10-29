@@ -87,6 +87,35 @@ class Api::KiosksControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "heartbeats accept explicit counts and legacy PID list formats" do
+    [
+      [{ chromium_pid_count: 7 }, 7],
+      [{ chromium_pid_count: "8", chromium_pids: "101 102" }, 8],
+      [{ chromium_pids: 9 }, 9],
+      [{ chromium_pids: "101 102 103" }, 3],
+      [{ chromium_pids: [101, 102] }, 2],
+      [{ chromium_pids: [] }, 0]
+    ].each do |attributes, expected|
+      post api_kiosks_heartbeat_url,
+        params: attributes.merge(kiosk_id: "pid-count-host").to_json, headers: @headers
+
+      assert_response :success
+      assert_equal expected, KioskHeartbeat.find_by!(kiosk_id: "pid-count-host").chromium_pids
+    end
+  end
+
+  test "invalid Chromium counts return a client error without changing the heartbeat" do
+    heartbeat = KioskHeartbeat.create!(kiosk_id: "pid-count-host", last_seen_at: 1.minute.ago, chromium_pids: 3)
+
+    [{ chromium_pid_count: {} }, { chromium_pid_count: -1 }, { chromium_pid_count: 2**31 }, { chromium_pids: {} }].each do |attributes|
+      post api_kiosks_heartbeat_url,
+        params: attributes.merge(kiosk_id: heartbeat.kiosk_id).to_json, headers: @headers
+
+      assert_response :bad_request
+      assert_equal 3, heartbeat.reload.chromium_pids
+    end
+  end
+
   test "invalid log timestamps use receipt time" do
     freeze_time do
       post api_kiosks_logs_url,

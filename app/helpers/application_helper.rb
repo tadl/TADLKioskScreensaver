@@ -5,17 +5,10 @@ require 'json'
 module ApplicationHelper
   LOCATIONS_CACHE_KEY = "kiosk-dashboard/locations/v1"
   LOCATIONS_CACHE_TTL = 15.minutes
+  LOCATIONS_RETRY_TTL = 1.minute
 
   def locations_data
-    cached = Rails.cache.read(LOCATIONS_CACHE_KEY)
-    return cached[:locations] if cached && cached[:fetched_at] > LOCATIONS_CACHE_TTL.ago
-
-    locations = fetch_locations_data
-    Rails.cache.write(LOCATIONS_CACHE_KEY, { locations: locations, fetched_at: Time.current })
-    locations
-  rescue => e
-    Rails.logger.warn("Could not load location data: #{e}")
-    cached&.fetch(:locations, []) || []
+    @locations_data ||= cached_locations_data
   end
 
   def location_for_group(group)
@@ -157,6 +150,28 @@ module ApplicationHelper
 
 
   private
+
+  def cached_locations_data
+    cached = Rails.cache.read(LOCATIONS_CACHE_KEY)
+    if cached && ((cached[:fetched_at] && cached[:fetched_at] > LOCATIONS_CACHE_TTL.ago) ||
+                  (cached[:retry_at] && cached[:retry_at] > Time.current))
+      return cached[:locations]
+    end
+
+    entry = begin
+      { locations: fetch_locations_data, fetched_at: Time.current }
+    rescue => e
+      Rails.logger.warn("Could not load location data: #{e}")
+      # Keep the last good response and avoid retrying once per dashboard row.
+      { locations: cached&.fetch(:locations, []) || [],
+        fetched_at: cached&.dig(:fetched_at), retry_at: LOCATIONS_RETRY_TTL.from_now }
+    end
+    Rails.cache.write(LOCATIONS_CACHE_KEY, entry)
+    entry[:locations]
+  rescue => e
+    Rails.logger.warn("Could not cache location data: #{e}")
+    entry&.fetch(:locations, []) || cached&.fetch(:locations, []) || []
+  end
 
   def fetch_locations_data
     uri = URI.parse(ENV.fetch("LOCATION_DATA_URL"))

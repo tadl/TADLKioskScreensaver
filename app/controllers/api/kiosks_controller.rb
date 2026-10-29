@@ -26,12 +26,8 @@ class Api::KiosksController < ActionController::API
     hb.uptime_seconds = payload["uptime_seconds"]
     hb.kiosk_service  = payload["kiosk_service"]
 
-    pid_count =
-      payload["chromium_pid_count"] ||
-      payload["chromium_pids"]&.to_s&.split&.length ||
-      payload["chromium_pids"]
-
-    hb.chromium_pids = pid_count.to_i if pid_count.present?
+    pid_count = chromium_pid_count(payload)
+    hb.chromium_pids = pid_count unless pid_count.nil?
 
     hb.chromium_devtools_ok   = payload["chromium_devtools_ok"]
     hb.chromium_devtools_http = payload["chromium_devtools_http"].to_s.presence
@@ -120,5 +116,25 @@ class Api::KiosksController < ActionController::API
     parsed
   rescue ArgumentError, TypeError
     nil
+  end
+
+  def chromium_pid_count(payload)
+    explicit = payload["chromium_pid_count"]
+    value = explicit.nil? ? payload["chromium_pids"] : explicit
+    return if value.nil?
+
+    # Older clients send a whitespace-separated PID list; newer ones send counts.
+    return value.split.length if explicit.nil? && value.is_a?(String)
+    return value.length if explicit.nil? && value.is_a?(Array)
+
+    count = case value
+    when Integer then value
+    when String then Integer(value, 10, exception: false)
+    end
+    unless count && count.between?(0, 2**31 - 1)
+      raise InvalidPayload, "Chromium process count must be a nonnegative 32-bit integer"
+    end
+
+    count
   end
 end

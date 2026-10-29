@@ -26,6 +26,52 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_equal @locations_data.first, location_for_group(group)
   end
 
+  test "location feed failures are cached between dashboard requests and retried later" do
+    cache = ActiveSupport::Cache::MemoryStore.new
+    attempts = 0
+    fetch = lambda do
+      attempts += 1
+      raise IOError, "synthetic feed outage" if attempts == 1
+      [{ "shortname" => "example" }]
+    end
+
+    previous_cache = Rails.cache
+    Rails.cache = cache
+    define_singleton_method(:fetch_locations_data, &fetch)
+
+    assert_empty locations_data
+    assert_empty locations_data
+    @locations_data = nil
+    assert_empty locations_data
+    assert_equal 1, attempts
+
+    travel 61.seconds do
+      @locations_data = nil
+      assert_equal [{ "shortname" => "example" }], locations_data
+      assert_equal 2, attempts
+    end
+  ensure
+    Rails.cache = previous_cache
+  end
+
+  test "a failed location refresh preserves the last good data" do
+    cache = ActiveSupport::Cache::MemoryStore.new
+    previous = [{ "shortname" => "example", "monday" => "9:00 AM to 5:00 PM" }]
+    cache.write(ApplicationHelper::LOCATIONS_CACHE_KEY, locations: previous, fetched_at: 1.hour.ago)
+    attempts = 0
+
+    previous_cache = Rails.cache
+    Rails.cache = cache
+    define_singleton_method(:fetch_locations_data) { attempts += 1; raise IOError, "synthetic feed outage" }
+
+    assert_equal previous, locations_data
+    @locations_data = nil
+    assert_equal previous, locations_data
+    assert_equal 1, attempts
+  ensure
+    Rails.cache = previous_cache
+  end
+
   def locations_data
     @locations_data || super
   end
