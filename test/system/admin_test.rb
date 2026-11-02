@@ -26,7 +26,7 @@ class AdminTest < ApplicationSystemTestCase
     assert_equal "admin-account-toggle", page.evaluate_script("document.activeElement.className")
 
     trigger.click
-    find("h1").click
+    find(".admin-metrics").click
     assert_no_selector ".admin-account[open]"
     trigger.click
     click_button "Sign out"
@@ -108,14 +108,17 @@ class AdminTest < ApplicationSystemTestCase
     KioskSession.create!(kiosk_code: kiosk.slug, host: "demo-host.example.com", started_at: 1.hour.ago, ended_at: 10.minutes.ago)
     KioskLog.create!(kiosk_id: "demo-host.example.com", occurred_at: Time.current, level: "warn", message: "<img src=x onerror=window.logInjected=true>")
     visit admin_root_path
+    click_link "Stats", exact: true
     assert_selector "canvas"
     assert page.evaluate_script("Chart.getChart(document.querySelector('canvas')) !== undefined")
     page.save_screenshot Rails.root.join("tmp/screenshots/admin-overview.png")
+    click_link "Live status", exact: true
     click_link "demo-host.example.com"
     assert_text /Host diagnostics/i
     assert_text "<img src=x onerror=window.logInjected=true>"
     assert_nil page.evaluate_script("window.logInjected")
     click_link "Overview", match: :first
+    click_link "Stats", exact: true
     assert_selector "canvas"
     assert page.evaluate_script("Chart.getChart(document.querySelector('canvas')) !== undefined")
   end

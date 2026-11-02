@@ -283,6 +283,64 @@ class Admin::DashboardControllerTest < ActionController::TestCase
   test "anonymous visitors must log in" do
     get :index
     assert_redirected_to login_path
+    get :index, format: :json
+    assert_redirected_to login_path
+  end
+
+  test "live status is the default and report submissions retain the stats tab" do
+    @request.session[:user_id] = users(:one).id
+    get :index
+
+    assert_response :success
+    assert_select '#overview-status-tab[aria-selected="true"]'
+    assert_select '#overview-status-panel:not([hidden])'
+    assert_select '#overview-stats-panel[hidden]'
+    assert_select 'input[name="tab"][value="stats"]'
+    assert_not_includes response.body, "Refresh overview"
+    assert_not_includes response.body, "Every screen, in sight."
+    assert_not_includes response.body, "+ Add slide"
+
+    get :index, params: { tab: "stats" }
+    assert_select '#overview-stats-tab[aria-selected="true"]'
+    assert_select '#overview-stats-panel:not([hidden])'
+    assert_select '#overview-status-panel[hidden]'
+  end
+
+  test "polling scopes hosts and counters without loading usage records" do
+    actor = users(:two)
+    actor.user_permissions.first.kiosks << kiosks(:one)
+    KioskStatus.mark!(kiosk: kiosks(:one), host: "visible-host", state: :opac)
+    KioskStatus.mark!(kiosk: kiosks(:two), host: "hidden-host", state: :screensaver)
+    [kiosks(:one), kiosks(:two)].each do |kiosk|
+      KioskSession.create!(kiosk_code: kiosk.slug, host: "#{kiosk.slug}-host", started_at: 1.hour.ago, ended_at: 30.minutes.ago)
+    end
+    @request.session[:user_id] = actor.id
+    instantiated_sessions = 0
+    subscriber = ->(event) { instantiated_sessions += event.payload[:record_count] if event.payload[:class_name] == "KioskSession" }
+
+    ActiveSupport::Notifications.subscribed(subscriber, "instantiation.active_record") do
+      get :index, format: :json
+    end
+
+    assert_response :success
+    assert_includes response.headers["Cache-Control"], "no-store"
+    assert_equal({ "kiosks" => 1, "in_use" => 1, "screensaver" => 0, "usage_sessions" => 1 }, response.parsed_body.fetch("metrics"))
+    assert_equal ["visible-host"], response.parsed_body.fetch("kiosks").flat_map { |kiosk| kiosk.fetch("hosts").pluck("host") }
+    assert_not_includes response.body, "hidden-host"
+    assert_equal 0, instantiated_sessions
+  end
+
+  test "polling honors the selected reporting dates" do
+    @request.session[:user_id] = users(:one).id
+    [1, 3].each do |days_ago|
+      KioskSession.create!(kiosk_code: kiosks(:one).slug, host: "history-host-#{days_ago}",
+        started_at: days_ago.days.ago, ended_at: days_ago.days.ago + 5.minutes)
+    end
+
+    get :index, format: :json, params: { start: Date.yesterday.to_s, end: Date.yesterday.to_s }
+
+    assert_response :success
+    assert_equal 1, response.parsed_body.fetch("metrics").fetch("usage_sessions")
   end
 
   test "dashboard scopes status and usage to the staff account" do

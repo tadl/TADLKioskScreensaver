@@ -1,0 +1,58 @@
+<section id="overview-stats-panel" class="admin-panel admin-overview-panel" role="tabpanel" aria-labelledby="overview-stats-tab" tabindex="0" data-overview-target="panel" data-tab="stats" <%= "hidden" unless @active_tab == "stats" %>>
+  <div class="admin-panel-heading">
+    <h2>Kiosk usage</h2>
+  </div>
+  <%= form_with url: admin_root_path, method: :get, class: "admin-report-filters", data: { controller: "report-filter" } do %>
+    <%= hidden_field_tag :tab, "stats" %>
+    <div class="admin-field">
+      <%= label_tag :kiosk_group, "Kiosk group" %>
+      <%= select_tag :kiosk_group, options_from_collection_for_select(@report.groups, :id, :name, @report.selected_group&.id), include_blank: current_user.admin? ? "All kiosks" : "All my kiosks", data: { action: "change->report-filter#apply" } %>
+    </div>
+    <% presets = kiosk_usage_presets; preset = presets.find { |_, range| range == @report.date_range }&.first || "custom" %>
+    <div class="admin-field">
+      <%= label_tag :preset_range, "Date range" %>
+      <%= select_tag :preset_range, options_for_select(presets.map { |key, range| [key.humanize, key, { 'data-start' => range.begin.to_s, 'data-end' => range.end.to_s }] } + [["Custom", "custom"]], preset), data: { action: "change->report-filter#preset" } %>
+    </div>
+    <div class="admin-field">
+      <%= label_tag :start, "Start date" %>
+      <%= date_field_tag :start, @report.date_range.begin, data: { report_filter_target: "start", action: "change->report-filter#custom" } %>
+    </div>
+    <div class="admin-field">
+      <%= label_tag :end, "End date" %>
+      <%= date_field_tag :end, @report.date_range.end, data: { report_filter_target: "end", action: "change->report-filter#custom" } %>
+    </div>
+    <%= submit_tag "Apply", class: "admin-button admin-button-secondary" %>
+  <% end %>
+  <% if @report.sessions.empty? %>
+    <div class="admin-empty">
+      <h3>No usage for this range</h3>
+      <p>Choose another date range or kiosk group to explore your data.</p>
+    </div>
+  <% else %>
+    <div class="admin-report-body">
+      <% @report.grouped.each_with_index do |(group, sessions), index| %>
+        <details class="admin-report-group" <%= 'open' if index.zero? %>>
+          <summary>
+            <span>
+              <%= group&.name || "No group" %>
+            </span>
+            <span class="admin-muted">
+              <%= pluralize(sessions.size, 'session') %>
+            </span>
+          </summary>
+          <div class="admin-report-group-body">
+            <%= render "usage_chart", sessions: sessions, start_date: @report.date_range.begin, end_date: @report.date_range.end %>
+            <% sessions.group_by { |session| session.kiosk&.name || session.kiosk_code }.each do |name, kiosk_sessions| %>
+              <h3 class="mt-4 mb-2">
+                <%= name %>
+                <span class="admin-muted font-normal">· <%= pluralize(kiosk_sessions.size, 'session') %>
+                </span>
+              </h3>
+              <%= render "usage_table", hosts: kiosk_sessions.group_by(&:host), start_date: @report.date_range.begin, end_date: @report.date_range.end, group: group %>
+            <% end %>
+          </div>
+        </details>
+      <% end %>
+    </div>
+  <% end %>
+</section>

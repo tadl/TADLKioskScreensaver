@@ -1,0 +1,8 @@
+<a class="admin-host-status <%= host && (host[:state] == 'opac' ? 'is-active' : 'is-idle') %>"
+   href="<%= host&.fetch(:url) %>"
+   data-status-id="<%= host&.fetch(:id) %>"
+   aria-label="<%= host && "#{host[:host]} · #{host[:state] == 'opac' ? 'In use' : 'Screensaver'} · #{host[:duration]}" %>"
+   title="<%= host && "#{host[:host]} · #{host[:state] == 'opac' ? 'In use' : 'Screensaver'}" %>">
+  <strong data-overview-host-name><%= host&.fetch(:host) %></strong>
+  <span data-overview-host-duration><%= host&.fetch(:duration) %></span>
+</a>

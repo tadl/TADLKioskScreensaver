@@ -49,9 +49,13 @@
   .admin-page-header h1 { @apply text-3xl font-semibold tracking-tight text-tadl-900 sm:text-4xl; overflow-wrap: anywhere; }
   .admin-eyebrow { @apply mb-2 text-[10px] font-bold uppercase tracking-[0.17em] text-tadl-700; }
   .admin-description { @apply mt-3 max-w-2xl text-sm leading-relaxed text-slate-500; }
-  .admin-overview-header { @apply mb-5 gap-3; }
-  .admin-overview-header h1 { @apply text-2xl sm:text-3xl; }
-  .admin-overview-header .admin-description { @apply mt-1; }
+  .admin-main:has(> .admin-overview) { @apply pt-5 lg:pt-6; }
+  .admin-overview-warning { @apply mb-4 py-2 text-xs; }
+  .admin-overview-toolbar { @apply mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2; }
+  .admin-overview-tabs { @apply flex gap-1 rounded-lg bg-slate-200/60 p-1; }
+  .admin-overview-tab { @apply rounded-md px-4 py-2 text-xs font-semibold text-slate-500 hover:text-tadl-900; }
+  .admin-overview-tab[aria-selected="true"] { @apply bg-white text-tadl-900 shadow-xs; }
+  .admin-overview-refresh { @apply text-[11px] text-slate-500; }
   .admin-button { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition-colors; }
   .admin-button-primary { @apply border border-tadl-600 bg-tadl-600 text-white shadow-sm hover:bg-tadl-700; }
   .admin-button-secondary { @apply border border-slate-200 bg-white text-slate-700 shadow-xs hover:border-slate-300 hover:bg-slate-50; }
@@ -137,14 +141,18 @@
   .admin-link-list { @apply space-y-3 text-sm text-tadl-800; }
   .admin-link-list a { @apply hover:underline; }
   .admin-preview-grid { @apply grid gap-5 sm:grid-cols-2 xl:grid-cols-3; }
-  .admin-status-grid { @apply grid gap-3 p-4 lg:grid-cols-2 2xl:grid-cols-3; }
-  .admin-status-card { @apply min-w-0 rounded-lg border border-slate-200 p-3; }
-  .admin-status-card h3 { @apply font-semibold text-tadl-900; }
-  .admin-host-status { @apply mt-2 flex items-center justify-between gap-3 rounded-lg border px-3 py-2 text-xs transition-colors; }
+  .admin-status-grid { @apply grid items-start gap-3 p-3; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+  .admin-status-card { @apply min-w-0 overflow-hidden rounded-lg border border-slate-200; }
+  .admin-status-card:has(.admin-host-status:nth-child(7)) { grid-column: 1 / -1; }
+  .admin-status-card-heading { @apply flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 border-b border-slate-100 px-3 py-1.5; }
+  .admin-status-card h3 { @apply text-xs font-semibold text-tadl-900; }
+  .admin-status-card-heading > span { @apply text-[10px] text-slate-500; }
+  .admin-status-hosts { @apply grid gap-1 p-2; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+  .admin-host-status { @apply flex min-w-0 items-center justify-between gap-2 rounded-md border px-2 py-1 text-[11px] transition-colors; }
   .admin-host-status.is-active { @apply border-emerald-100 bg-emerald-50 text-emerald-900 hover:bg-emerald-100; }
   .admin-host-status.is-idle { @apply border-amber-100 bg-amber-50/70 text-amber-900 hover:bg-amber-100; }
-  .admin-host-status strong { @apply break-all; }
-  .admin-host-status small { @apply mt-1 block text-[10px] opacity-80; }
+  .admin-host-status strong { @apply min-w-0 truncate font-semibold; }
+  .admin-host-status > span { @apply shrink-0 text-[10px] tabular-nums opacity-80; }
   .admin-report-filters { @apply flex flex-wrap items-end gap-3 border-b border-slate-100 px-4 py-3; }
   .admin-report-filters .admin-field { @apply mb-0; }
   .admin-report-body { @apply p-4; }

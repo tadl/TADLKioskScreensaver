@@ -1,0 +1,11 @@
+<article class="admin-status-card">
+  <header class="admin-status-card-heading">
+    <h3 data-overview-kiosk-name><%= kiosk&.fetch(:name) %></h3>
+    <span data-overview-kiosk-group><%= kiosk&.fetch(:group) %></span>
+  </header>
+  <div class="admin-status-hosts" data-overview-kiosk-hosts>
+    <% kiosk&.fetch(:hosts)&.each do |host| %>
+      <%= render "status_host", host: host %>
+    <% end %>
+  </div>
+</article>
