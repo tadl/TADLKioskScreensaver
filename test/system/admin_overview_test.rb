@@ -70,7 +70,9 @@ class AdminOverviewTest < ApplicationSystemTestCase
     select "Today", from: "Date range"
     assert_selector '#overview-stats-tab[aria-selected="true"]'
     assert_field "Start date", with: Date.current.to_s
-    assert_selector "canvas"
+    # The date fields change before Turbo replaces the report. Wait for the
+    # hourly chart so the following tab action targets the completed response.
+    assert_selector "canvas[aria-label='Usage sessions by hour'][width]:not([width='0'])"
     find("#overview-stats-tab").send_keys(:home)
     assert_selector '#overview-status-tab[aria-selected="true"]'
 
@@ -115,6 +117,35 @@ class AdminOverviewTest < ApplicationSystemTestCase
     assert_selector '[data-metric="in_use"]', text: "0", exact_text: true
   end
 
+  test "status card layout stays consistent after visiting stats and polling" do
+    4.times do |index|
+      kiosk = Kiosk.create!(name: "Layout kiosk #{index}", slug: "layout-#{index}", catalog_url: "https://catalog.example.com/")
+      (index.zero? ? 9 : 3).times do |host|
+        KioskStatus.mark!(kiosk: kiosk, host: "layout-#{index}-host-#{host}", state: :opac)
+      end
+      KioskSession.create!(kiosk_code: kiosk.slug, host: "layout-#{index}-host-0", started_at: 1.hour.ago, ended_at: 10.minutes.ago)
+    end
+
+    [1440, 1370, 1360, 1280].each do |width|
+      page.driver.browser.manage.window.resize_to(width, 1000)
+      visit admin_root_path
+      before = status_layout
+      click_link "Stats", exact: true
+      click_link "Live status", exact: true
+      assert_equal before, status_layout, "Tab switch changed layout at #{width}px"
+
+      click_link "Stats", exact: true
+      page.execute_script("window.testOverviewRefresh()")
+      assert_selector '[data-overview-target="refreshStatus"]', text: /Updated/
+      click_link "Live status", exact: true
+      assert_equal before, status_layout, "Polling changed layout at #{width}px"
+
+      visit admin_root_path(tab: "stats")
+      click_link "Live status", exact: true
+      assert_equal before, status_layout, "Loading with stats selected changed layout at #{width}px"
+    end
+  end
+
   test "failed refreshes retain the last status and recover on the next interval" do
     visit admin_root_path
     assert_text "Waiting for your kiosks"
@@ -130,5 +161,24 @@ class AdminOverviewTest < ApplicationSystemTestCase
     page.execute_script("window.fetch = window.originalOverviewFetch; window.testOverviewRefresh()")
     assert_selector ".admin-host-status.is-idle", text: "retained-opac"
     assert_selector '[data-overview-target="refreshStatus"]', text: /Updated/
+  end
+
+  private
+
+  def status_layout
+    page.evaluate_script(<<~JS)
+      (() => {
+        const grid = document.querySelector('.admin-status-grid');
+        const box = grid.getBoundingClientRect();
+        return {
+          viewport: document.documentElement.clientWidth,
+          grid: [box.width, getComputedStyle(grid).gridTemplateColumns],
+          cards: Array.from(grid.children, card => {
+            const bounds = card.getBoundingClientRect();
+            return [card.querySelector('h3').textContent.trim(), bounds.x - box.x, bounds.y - box.y, bounds.width, bounds.height];
+          })
+        };
+      })()
+    JS
   end
 end
